@@ -4,23 +4,42 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { UserSchema, UserRoleEnum } from '@/lib/schemas/userSchema';
 import { toast } from 'sonner';
-import { IUser } from '@/lib/models/User';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { z } from 'zod';
+
+// Define the form schema internally
+const formSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .regex(/^[0-9+]+$/, 'Invalid phone number format'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Must contain at least one number')
+    .regex(/[!@#$%^&*]/, 'Must contain at least one special character')
+    .optional(),
+  role: z.enum(['admin', 'ceo', 'laboratory', 'pharmacy']),
+  approved: z.boolean()
+});
+
+// Infer the form type from the schema
+type UserFormValues = z.infer<typeof formSchema>;
 
 interface UserFormProps {
-  user?: IUser | null;
+  user?: Partial<UserFormValues> & { _id?: string } | null;
   onSuccess: () => void;
 }
 
 export default function UserForm({ user, onSuccess }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const form = useForm({
-    resolver: zodResolver(UserSchema),
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: user || {
       name: '',
       email: '',
@@ -31,29 +50,35 @@ export default function UserForm({ user, onSuccess }: UserFormProps) {
     },
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: UserFormValues) => {
     setIsSubmitting(true);
     try {
-      const url = user 
+      const url = user?._id 
         ? `/api/admin/users/${user._id}`
         : '/api/admin/users';
       
-      const method = user ? 'PUT' : 'POST';
+      const method = user?._id ? 'PUT' : 'POST';
+      
+      // Remove password if empty for updates
+      const payload = user?._id && !data.password 
+        ? { ...data, password: undefined }
+        : data;
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json() as { message?: string };
         throw new Error(errorData.message || 'Failed to save user');
       }
       
-      toast.success(user ? 'User updated' : 'User created');
+      toast.success(user?._id ? 'User updated' : 'User created');
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || 'An error occurred');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,7 +129,7 @@ export default function UserForm({ user, onSuccess }: UserFormProps) {
           )}
         />
         
-        {!user && (
+        {!user?._id && (
           <FormField
             control={form.control}
             name="password"
@@ -133,7 +158,7 @@ export default function UserForm({ user, onSuccess }: UserFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {UserRoleEnum.map(role => (
+                  {formSchema.shape.role.options.map(role => (
                     <SelectItem key={role} value={role}>
                       {role.charAt(0).toUpperCase() + role.slice(1)}
                     </SelectItem>

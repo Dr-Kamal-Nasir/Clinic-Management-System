@@ -7,7 +7,12 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { jwtDecode } from 'jwt-decode';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+interface TokenPayload {
+  role: string;
+  [key: string]: any;
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   await dbConnect();
   
   try {
@@ -19,7 +24,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: any = jwtDecode(accessToken);
+    const decoded: TokenPayload = jwtDecode(accessToken);
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -32,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
     
     // Don't update password if not provided
-    const updateData: any = { ...body };
+    const updateData: Partial<typeof body> = { ...body };
     if (!body.password) {
       delete updateData.password;
     } else {
@@ -56,7 +61,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   await dbConnect();
   
   try {
@@ -68,7 +73,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: any = jwtDecode(accessToken);
+    const decoded: TokenPayload = jwtDecode(accessToken);
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

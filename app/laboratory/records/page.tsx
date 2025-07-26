@@ -1,0 +1,524 @@
+"use client";
+
+import { useState, useCallback, memo } from "react";
+import useSWR, { mutate } from "swr";
+import { PlusIcon, PencilIcon, TrashIcon, CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const TEST_TYPES = [
+  "Blood Test",
+  "Stool Test",
+  "Urin Test",
+  "MRI",
+  "CT Scan",
+  "Ultrasound",
+  "ECG",
+  "Other",
+];
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+interface LaboratoryRecord {
+  _id: string;
+  date: string;
+  patientName: string;
+  invoiceNumber: string;
+  testType: string;
+  phoneNumber?: string;
+  amountCharged: number;
+  amountPaid: number;
+  recordedBy?: { name: string };
+}
+
+interface FormFieldProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  optional?: boolean;
+}
+
+interface NumberFieldProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+interface DateFilterProps {
+  label: string;
+  date?: Date;
+  setDate: (date?: Date) => void;
+}
+
+interface SummaryCardProps {
+  title: string;
+  value: number;
+}
+
+const FormField = memo(({ 
+  label, 
+  value, 
+  onChange, 
+  optional = false 
+}: FormFieldProps) => {
+  return (
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor={label.toLowerCase()} className="text-right">
+        {label}{!optional && '*'}
+      </Label>
+      <Input
+        id={label.toLowerCase()}
+        value={value}
+        onChange={onChange}
+        className="col-span-3"
+      />
+    </div>
+  );
+});
+FormField.displayName = 'FormField';
+
+const NumberField = memo(({ 
+  label, 
+  value, 
+  onChange 
+}: NumberFieldProps) => {
+  return (
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label className="text-right">{label}</Label>
+      <Input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="col-span-3"
+      />
+    </div>
+  );
+});
+NumberField.displayName = 'NumberField';
+
+const DateFilter = memo(({ 
+  label, 
+  date, 
+  setDate 
+}: DateFilterProps) => {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, "PPP") : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+});
+DateFilter.displayName = 'DateFilter';
+
+const SummaryCard = memo(({ title, value }: SummaryCardProps) => {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">{title}</h3>
+          <p className="text-2xl font-bold">${value.toFixed(2)}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+SummaryCard.displayName = 'SummaryCard';
+
+export default function LaboratoryRecords() {
+  const { user } = useAuthStore();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [patientName, setPatientName] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [testType, setTestType] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [amountCharged, setAmountCharged] = useState(0);
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<LaboratoryRecord | null>(null);
+  const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
+  const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
+
+  // Memoized handlers for stable references
+  const handlePatientNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPatientName(e.target.value);
+  }, []);
+
+  const handleInvoiceNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInvoiceNumber(e.target.value);
+  }, []);
+
+  const handlePhoneNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhoneNumber(e.target.value);
+  }, []);
+
+  const handleAmountChargedChange = useCallback((value: number) => {
+    setAmountCharged(value);
+  }, []);
+
+  const handleAmountPaidChange = useCallback((value: number) => {
+    setAmountPaid(value);
+  }, []);
+
+  const queryString = new URLSearchParams();
+  if (filterStartDate) queryString.append("startDate", filterStartDate.toISOString());
+  if (filterEndDate) queryString.append("endDate", filterEndDate.toISOString());
+
+  const { data: records, isLoading } = useSWR<LaboratoryRecord[]>(
+    `/api/laboratory/records?${queryString.toString()}`,
+    fetcher
+  );
+
+  const totalCharged = records?.reduce((sum, r) => sum + r.amountCharged, 0) || 0;
+  const totalPaid = records?.reduce((sum, r) => sum + r.amountPaid, 0) || 0;
+  const totalBalance = totalCharged - totalPaid;
+
+  const resetForm = useCallback(() => {
+    setDate(new Date());
+    setPatientName("");
+    setInvoiceNumber("");
+    setTestType("");
+    setPhoneNumber("");
+    setAmountCharged(0);
+    setAmountPaid(0);
+    setEditMode(false);
+    setCurrentRecord(null);
+  }, []);
+
+  const handleEdit = useCallback((record: LaboratoryRecord) => {
+    setDate(new Date(record.date));
+    setPatientName(record.patientName);
+    setInvoiceNumber(record.invoiceNumber);
+    setTestType(record.testType);
+    setPhoneNumber(record.phoneNumber || "");
+    setAmountCharged(record.amountCharged);
+    setAmountPaid(record.amountPaid);
+    setCurrentRecord(record);
+    setEditMode(true);
+    setDialogOpen(true);
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!date || !patientName || !invoiceNumber || !testType || amountCharged <= 0) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      const recordData = {
+        date,
+        patientName,
+        invoiceNumber,
+        testType,
+        phoneNumber,
+        amountCharged,
+        amountPaid,
+      };
+
+      const url = editMode 
+        ? `/api/laboratory/records?id=${currentRecord?._id}` 
+        : '/api/laboratory/records';
+      
+      const method = editMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recordData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Request failed');
+      }
+
+      toast.success(`Record ${editMode ? 'updated' : 'created'} successfully`);
+      setDialogOpen(false);
+      mutate(`/api/laboratory/records?${queryString.toString()}`);
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+
+    try {
+      const response = await fetch(`/api/laboratory/records?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete record');
+      }
+
+      toast.success("Record deleted successfully");
+      mutate(`/api/laboratory/records?${queryString.toString()}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Delete failed');
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Laboratory Records</h1>
+        <Button onClick={() => { setDialogOpen(true); resetForm(); }}>
+          <PlusIcon className="mr-2 h-4 w-4" /> Add Record
+        </Button>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Filter Records</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <DateFilter 
+              label="Start Date"
+              date={filterStartDate}
+              setDate={setFilterStartDate}
+            />
+            <DateFilter 
+              label="End Date"
+              date={filterEndDate}
+              setDate={setFilterEndDate}
+            />
+            <div className="flex items-end">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setFilterStartDate(undefined);
+                  setFilterEndDate(undefined);
+                }}
+              >
+                Clear Filter
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <SummaryCard title="Total Charged" value={totalCharged} />
+        <SummaryCard title="Total Paid" value={totalPaid} />
+        <SummaryCard title="Balance" value={totalBalance} />
+      </div>
+
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Patient</TableHead>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Test Type</TableHead>
+              <TableHead>Charged</TableHead>
+              <TableHead>Paid</TableHead>
+              <TableHead>Recorded By</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  <Skeleton className="h-10 w-full" />
+                </TableCell>
+              </TableRow>
+            ) : records?.length ? (
+              records.map((record) => (
+                <TableRow key={record._id}>
+                  <TableCell>{format(new Date(record.date), 'PP')}</TableCell>
+                  <TableCell>{record.patientName}</TableCell>
+                  <TableCell>{record.invoiceNumber}</TableCell>
+                  <TableCell>{record.testType}</TableCell>
+                  <TableCell>${record.amountCharged.toFixed(2)}</TableCell>
+                  <TableCell>${record.amountPaid.toFixed(2)}</TableCell>
+                  <TableCell>{record.recordedBy?.name || 'System'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(record)}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(record._id)}
+                      >
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  No records found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editMode ? 'Edit Record' : 'Add New Record'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date*
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "col-span-3 justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <FormField
+              label="Patient Name*"
+              value={patientName}
+              onChange={handlePatientNameChange}
+            />
+            <FormField
+              label="Invoice Number*"
+              value={invoiceNumber}
+              onChange={handleInvoiceNumberChange}
+            />
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="testType" className="text-right">
+                Test Type*
+              </Label>
+              <Select
+                value={testType}
+                onValueChange={setTestType}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select test type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEST_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <FormField
+              label="Phone Number"
+              value={phoneNumber}
+              onChange={handlePhoneNumberChange}
+              optional
+            />
+            <NumberField
+              label="Amount Charged*"
+              value={amountCharged}
+              onChange={handleAmountChargedChange}
+            />
+            <NumberField
+              label="Amount Paid*"
+              value={amountPaid}
+              onChange={handleAmountPaidChange}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleSubmit}>
+              {editMode ? 'Update Record' : 'Add Record'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

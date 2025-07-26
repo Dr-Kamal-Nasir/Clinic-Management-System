@@ -1,4 +1,4 @@
-//app/unanuthorized/page.tsx
+//app/unauthorized/page.tsx
 'use client'
 
 import Link from 'next/link';
@@ -34,7 +34,7 @@ export default function UnauthorizedPage() {
             403 - Unauthorized Access
           </h1>
           <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
-            You don't have permission to access this page. Please contact your administrator.
+            You don&apos;t have permission to access this page. Please contact your administrator.
           </p>
           <div className="flex justify-center space-x-11">
             <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">

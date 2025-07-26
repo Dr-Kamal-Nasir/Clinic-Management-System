@@ -1,4 +1,3 @@
-// components/pharmacy/MedicineStockTable.tsx
 import { useState } from 'react';
 import {
   ColumnDef,
@@ -21,34 +20,57 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { MoreVertical, ArrowUpDown } from 'lucide-react';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import DeleteConfirmationDialog from '@/components/DeleteConfirmationDialog';
-import {useAuthStore} from '@/store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Badge } from '@/components/ui/badge';
+
+// Define the medicine stock type
+interface MedicineStock {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  currentQuantity: number;
+  originalQuantity: number;
+  remainingPercentage: number;
+  expiryDate: string | Date;
+  expiryStatus: 'valid' | 'expiring-soon' | 'expired';
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+}
+
+// Define the pagination type
+interface Pagination {
+  page: number;
+  totalPages: number;
+}
+
+// Define the component props
+interface MedicineStockTableProps {
+  data: MedicineStock[];
+  onEdit: (stock: MedicineStock) => void;
+  onDeleteSuccess: () => void;
+  pagination?: Pagination;
+}
 
 export default function MedicineStockTable({ 
   data, 
   onEdit,
   onDeleteSuccess,
   pagination
-}: {
-  data: any[];
-  onEdit: (stock: any) => void;
-  onDeleteSuccess: () => void;
-  pagination: any;
-}) {
+}: MedicineStockTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<any>(null);
+  const [selectedStock, setSelectedStock] = useState<MedicineStock | null>(null);
   const { mutate } = useSWRConfig();
   const { user } = useAuthStore();
 
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<MedicineStock>[] = [
     {
       accessorKey: 'name',
       header: 'Medicine Name',
@@ -58,30 +80,30 @@ export default function MedicineStockTable({
       header: 'Batch Number',
     },
     {
-  accessorKey: 'currentQuantity',
-  header: 'Current Quantity',
-  cell: ({ row }) => {
-    const stock = row.original;
-    return (
-      <div>
-        <div className="font-medium">{stock.currentQuantity}</div>
-        <div className="flex items-center gap-2 mt-1">
-          <Progress 
-            value={stock.remainingPercentage} 
-            className="h-2 w-24" 
-          />
-          <span className="text-xs text-muted-foreground">
-            {Math.round(stock.remainingPercentage)}%
-          </span>
-        </div>
-      </div>
-    );
-  },
-},
-{
-  accessorKey: 'originalQuantity',
-  header: 'Original Quantity',
-},
+      accessorKey: 'currentQuantity',
+      header: 'Current Quantity',
+      cell: ({ row }) => {
+        const stock = row.original;
+        return (
+          <div>
+            <div className="font-medium">{stock.currentQuantity}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <Progress 
+                value={stock.remainingPercentage} 
+                className="h-2 w-24" 
+              />
+              <span className="text-xs text-muted-foreground">
+                {Math.round(stock.remainingPercentage)}%
+              </span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'originalQuantity',
+      header: 'Original Quantity',
+    },
     {
       accessorKey: 'expiryDate',
       header: ({ column }) => (
@@ -184,7 +206,7 @@ export default function MedicineStockTable({
       });
 
       if (response.ok) {
-        toast('Success',{
+        toast('Success', {
           description: 'Medicine deleted successfully',
         });
         onDeleteSuccess();
@@ -192,7 +214,7 @@ export default function MedicineStockTable({
         throw new Error('Failed to delete medicine');
       }
     } catch (error) {
-      toast('Error',{
+      toast('Error', {
         description: 'Could not delete medicine',
       });
     } finally {
@@ -252,7 +274,7 @@ export default function MedicineStockTable({
         </Table>
       </div>
 
-         <div className="flex items-center justify-between py-4">
+      <div className="flex items-center justify-between py-4">
         <div className="text-sm text-muted-foreground">
           Page {pagination?.page} of {pagination?.totalPages}
         </div>
@@ -261,7 +283,7 @@ export default function MedicineStockTable({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => mutate('/api/pharmacy/stock')} // Fixed: added key argument
+            onClick={() => mutate('/api/pharmacy/stock')}
           >
             Refresh
           </Button>

@@ -1,14 +1,27 @@
-// src/components/forms/UserFormFields.tsx
+//componnets/forms/UseFormField.tsx
+
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { UserRoleEnum } from '@/lib/schemas/userSchema';
+import { UseFormReturn } from 'react-hook-form';
 
-export const UserFormFields = ({ form, isEditMode = false }: { 
-  form: any;
+interface UserFormValues {
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  role: string;
+  approved: boolean;
+}
+
+interface UserFormFieldsProps {
+  form: UseFormReturn<UserFormValues>;
   isEditMode?: boolean;
-}) => (
+}
+
+export const UserFormFields = ({ form, isEditMode = false }: UserFormFieldsProps) => (
   <>
     <FormField
       control={form.control}

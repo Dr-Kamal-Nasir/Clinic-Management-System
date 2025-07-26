@@ -7,13 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
 } from '@/components/ui/form';
 
 const formSchema = z.object({
@@ -33,12 +33,19 @@ const formSchema = z.object({
   path: ["confirmPassword"]
 });
 
+type FormValues = z.infer<typeof formSchema>;
+type ApiResponse = {
+  error?: string;
+  message?: string;
+  [key: string]: unknown;
+};
+
 export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [apiError, setApiError] = useState(''); // Renamed from 'error' to 'apiError'
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -49,9 +56,9 @@ export default function RegisterForm() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     setLoading(true);
-    setError('');
+    setApiError('');
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -65,7 +72,7 @@ export default function RegisterForm() {
         }),
       });
 
-      const data = await response.json();
+      const data: ApiResponse = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
@@ -73,8 +80,8 @@ export default function RegisterForm() {
 
       setSuccess(true);
       form.reset();
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -89,8 +96,8 @@ export default function RegisterForm() {
         <p className="text-gray-600">
           Your account is pending admin approval. You'll receive an email when your account is activated.
         </p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setSuccess(false)}
           className="mt-4"
         >
@@ -103,10 +110,10 @@ export default function RegisterForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {error && (
-          <div className="text-red-500 text-sm font-medium">{error}</div>
+        {apiError && (
+          <div className="text-red-500 text-sm font-medium">{apiError}</div>
         )}
-        
+       
         <FormField
           control={form.control}
           name="name"
@@ -120,7 +127,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        
+       
         <FormField
           control={form.control}
           name="email"
@@ -134,7 +141,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        
+       
         <FormField
           control={form.control}
           name="phone"
@@ -148,7 +155,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        
+       
         <FormField
           control={form.control}
           name="password"
@@ -162,7 +169,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        
+       
         <FormField
           control={form.control}
           name="confirmPassword"
@@ -176,7 +183,7 @@ export default function RegisterForm() {
             </FormItem>
           )}
         />
-        
+       
         <div className="text-xs text-gray-600 space-y-2">
           <p>Password must contain:</p>
           <ul className="list-disc pl-5">
@@ -186,7 +193,7 @@ export default function RegisterForm() {
             <li>One special character</li>
           </ul>
         </div>
-        
+       
         <Button type="submit" className="w-full mt-2" disabled={loading}>
           {loading ? 'Registering...' : 'Create Account'}
         </Button>

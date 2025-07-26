@@ -95,9 +95,10 @@ export async function POST(req: NextRequest) {
       { message: 'Cash record saved successfully', record: newDailyCash },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Sever error';
     return NextResponse.json(
-      { error: error.message || 'Server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

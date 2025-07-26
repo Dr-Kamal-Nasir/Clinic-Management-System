@@ -7,6 +7,15 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { jwtDecode } from 'jwt-decode';
 
+// Define types for JWT payload
+interface JwtPayload {
+  role: string;
+  [key: string]: any; // For other possible properties
+}
+
+// Type for user data without sensitive information
+type SafeUserData = Omit<InstanceType<typeof User>, 'password' | 'refreshTokens'>;
+
 export async function GET(req: NextRequest) {
   await dbConnect();
   
@@ -19,16 +28,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: any = jwtDecode(accessToken);
+    const decoded: JwtPayload = jwtDecode(accessToken);
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const users = await User.find({}, '-password -refreshTokens');
+    const users: SafeUserData[] = await User.find({}, '-password -refreshTokens');
     return NextResponse.json(users);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to fetch users:', error);
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch users';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -44,7 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: any = jwtDecode(accessToken);
+    const decoded: JwtPayload = jwtDecode(accessToken);
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -74,12 +84,13 @@ export async function POST(req: NextRequest) {
     });
     
     // Exclude password and refresh tokens
-    const { password, refreshTokens, ...userWithoutSensitive } = newUser.toObject();
+    const { password, refreshTokens, ...userWithoutSensitive }: SafeUserData = newUser.toObject();
     return NextResponse.json(userWithoutSensitive, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to create user:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
     return NextResponse.json(
-      { error: 'Failed to create user' }, 
+      { error: errorMessage }, 
       { status: 500 }
     );
   }

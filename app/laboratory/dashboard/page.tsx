@@ -6,7 +6,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
@@ -23,10 +27,52 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
+} from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+
+interface LabRecord {
+  _id: string;
+  amountPaid: number;
+  testType: string;
+  date: string;
+  description?: string;
+  doctorName?: string;
+}
+
+interface Expense {
+  _id: string;
+  amount: number;
+  expenseType: string;
+  date: string;
+  description?: string;
+}
+
+interface TestTypeData {
+  name: string;
+  value: number;
+}
+
+interface ExpenseTypeData {
+  name: string;
+  value: number;
+}
+
+interface MonthlyData {
+  name: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
+
+interface Metrics {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  testTypeData: TestTypeData[];
+  expenseTypeData: ExpenseTypeData[];
+}
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -36,82 +82,109 @@ export default function Dashboard() {
   const [endDate, setEndDate] = useState<Date | undefined>();
 
   // Fetch data
-  const { data: records, isLoading: recordsLoading } = useSWR(
+  const { data: records, isLoading: recordsLoading } = useSWR<LabRecord[]>(
     `/api/laboratory/records?${new URLSearchParams({
-      startDate: startDate?.toISOString() || '',
-      endDate: endDate?.toISOString() || ''
+      startDate: startDate?.toISOString() || "",
+      endDate: endDate?.toISOString() || "",
     })}`,
     fetcher
   );
 
-  const { data: expenses, isLoading: expensesLoading } = useSWR(
+  const { data: expenses, isLoading: expensesLoading } = useSWR<Expense[]>(
     `/api/laboratory/expenses?${new URLSearchParams({
-      startDate: startDate?.toISOString() || '',
-      endDate: endDate?.toISOString() || ''
+      startDate: startDate?.toISOString() || "",
+      endDate: endDate?.toISOString() || "",
     })}`,
     fetcher
   );
 
   // Calculate metrics
-  const metrics = useMemo(() => {
+  const metrics = useMemo<Metrics | null>(() => {
     if (!records || !expenses) return null;
 
-    const totalRevenue = records.reduce((sum: number, record: any) => sum + record.amountPaid, 0);
-    const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+    const totalRevenue = records.reduce(
+      (sum: number, record: LabRecord) => sum + record.amountPaid,
+      0
+    );
+    const totalExpenses = expenses.reduce(
+      (sum: number, expense: Expense) => sum + expense.amount,
+      0
+    );
     const netProfit = totalRevenue - totalExpenses;
 
-    // Group by test type
-    const testTypeData = records.reduce((acc: any, record: any) => {
-      acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
-      return acc;
-    }, {});
+    // Group by test type - using Record<string, number> properly
+    const testTypeData = records.reduce(
+      (acc: Record<string, number>, record: LabRecord) => {
+        acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
+        return acc;
+      },
+      {} as Record<string, number>
+    ); // Initialize as empty Record
 
-    // Group by expense type
-    const expenseTypeData = expenses.reduce((acc: any, expense: any) => {
-      const type = expense.expenseType === 'doctor_salary' ? 'Doctor Salaries' : 'Other Expenses';
-      acc[type] = (acc[type] || 0) + expense.amount;
-      return acc;
-    }, {});
+    // Group by expense type - using Record<string, number> properly
+    const expenseTypeData = expenses.reduce(
+      (acc: Record<string, number>, expense: Expense) => {
+        const type =
+          expense.expenseType === "doctor_salary"
+            ? "Doctor Salaries"
+            : "Other Expenses";
+        acc[type] = (acc[type] || 0) + expense.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    ); // Initialize as empty Record
+
+    function isLabRecord(item: LabRecord | Expense): item is LabRecord {
+      return "testType" in item;
+    }
 
     return {
       totalRevenue,
       totalExpenses,
       netProfit,
-      testTypeData: Object.entries(testTypeData).map(([name, value]) => ({ name, value })),
-      expenseTypeData: Object.entries(expenseTypeData).map(([name, value]) => ({ name, value }))
+      testTypeData: Object.entries(testTypeData).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      expenseTypeData: Object.entries(expenseTypeData).map(([name, value]) => ({
+        name,
+        value,
+      })),
     };
   }, [records, expenses]);
 
   // Monthly data for line chart
-  const monthlyData = useMemo(() => {
+  const monthlyData = useMemo<MonthlyData[]>(() => {
     if (!records || !expenses) return [];
 
-    // Group records by month
+    // Group records by month - using Record<string, number> properly
     const monthlyRecords: Record<string, number> = {};
-    records.forEach((record: any) => {
-      const month = format(new Date(record.date), 'MMM yyyy');
+    records.forEach((record: LabRecord) => {
+      const month = format(new Date(record.date), "MMM yyyy");
       monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
     });
 
-    // Group expenses by month
+    // Group expenses by month - using Record<string, number> properly
     const monthlyExpenses: Record<string, number> = {};
-    expenses.forEach((expense: any) => {
-      const month = format(new Date(expense.date), 'MMM yyyy');
+    expenses.forEach((expense: Expense) => {
+      const month = format(new Date(expense.date), "MMM yyyy");
       monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
     });
 
     // Combine data
     const allMonths = new Set([
       ...Object.keys(monthlyRecords),
-      ...Object.keys(monthlyExpenses)
+      ...Object.keys(monthlyExpenses),
     ]);
 
-    return Array.from(allMonths).map(month => ({
-      name: month,
-      revenue: monthlyRecords[month] || 0,
-      expenses: monthlyExpenses[month] || 0,
-      profit: (monthlyRecords[month] || 0) - (monthlyExpenses[month] || 0)
-    })).sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+    return Array.from(allMonths)
+      .map((month) => ({
+        name: month,
+        revenue: monthlyRecords[month] || 0,
+        expenses: monthlyExpenses[month] || 0,
+        profit: (monthlyRecords[month] || 0) - (monthlyExpenses[month] || 0),
+      }))
+      .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
   }, [records, expenses]);
 
   if (recordsLoading || expensesLoading) {
@@ -172,7 +245,7 @@ export default function Dashboard() {
                 selected={endDate}
                 onSelect={setEndDate}
                 initialFocus
-                disabled={(date) => startDate ? date < startDate : false}
+                disabled={(date) => (startDate ? date < startDate : false)}
               />
             </PopoverContent>
           </Popover>
@@ -196,7 +269,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${metrics?.totalRevenue?.toFixed(2) || '0.00'}
+              ${metrics?.totalRevenue?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -206,7 +279,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${metrics?.totalExpenses?.toFixed(2) || '0.00'}
+              ${metrics?.totalExpenses?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -215,10 +288,14 @@ export default function Dashboard() {
             <CardTitle>Net Profit</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-3xl font-bold ${
-              metrics?.netProfit && metrics.netProfit >= 0 ? 'text-green-500' : 'text-red-500'
-            }`}>
-              ${metrics?.netProfit?.toFixed(2) || '0.00'}
+            <div
+              className={`text-3xl font-bold ${
+                metrics?.netProfit && metrics.netProfit >= 0
+                  ? "text-green-500"
+                  : "text-red-500"
+              }`}
+            >
+              ${metrics?.netProfit?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -270,10 +347,15 @@ export default function Dashboard() {
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="name"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
                 >
                   {metrics?.testTypeData?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -300,10 +382,15 @@ export default function Dashboard() {
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="name"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
                 >
                   {metrics?.expenseTypeData?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -319,23 +406,41 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {[...(records || []).slice(0, 5), ...(expenses || []).slice(0, 5)]
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .sort(
+                  (a, b) =>
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                )
                 .slice(0, 5)
-                .map((item: any) => (
-                  <div key={item._id} className="flex justify-between items-center p-2 border rounded">
-                    <div>
-                      <p className="font-medium">{item.description || item.testType}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(item.date), 'PP')} • {item.doctorName || 'N/A'}
-                      </p>
+                .map((item) => {
+                  const isRecord = "testType" in item;
+                  return (
+                    <div
+                      key={item._id}
+                      className="flex justify-between items-center p-2 border rounded"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {isRecord
+                            ? item.testType
+                            : item.description || "Expense"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(item.date), "PP")} •{" "}
+                          {"doctorName" in item ? item.doctorName : "N/A"}
+                        </p>
+                      </div>
+                      <div
+                        className={`font-bold ${
+                          isRecord ? "text-green-500" : "text-red-500"
+                        }`}
+                      >
+                        {isRecord
+                          ? `+$${item.amountPaid.toFixed(2)}`
+                          : `-$${item.amount.toFixed(2)}`}
+                      </div>
                     </div>
-                    <div className={`font-bold ${
-                      item.amountPaid ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {item.amountPaid ? `+$${item.amountPaid.toFixed(2)}` : `-$${item.amount.toFixed(2)}`}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </CardContent>
         </Card>

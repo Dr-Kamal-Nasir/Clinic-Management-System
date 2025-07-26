@@ -11,7 +11,6 @@ import {
   ChevronRight,
   BarChart4,
   UserCog,
-  FileText,
   ShoppingCart,
   ClipboardList,
   Layers,

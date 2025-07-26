@@ -1,4 +1,5 @@
 // components/pharmacy/MedicineInventoryForm.tsx
+
 'use client';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -28,10 +29,23 @@ const formSchema = z.object({
   description: z.string().optional(),
 });
 
+interface Medicine {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  expiryDate: Date;
+  originalQuantity: number;
+  currentQuantity: number;
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+  description?: string;
+}
+
 interface MedicineStockFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialData?: any;
+  initialData?: Medicine;
   onSuccess: () => void;
 }
 
@@ -79,11 +93,11 @@ export function MedicineStockForm({ open, onOpenChange, initialData, onSuccess }
         toast.success(isEditMode ? 'Medicine updated successfully' : 'Medicine added successfully');
         onSuccess();
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json() as { error?: string };
         throw new Error(errorData.error || 'Failed to save medicine');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save medicine');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save medicine');
     } finally {
       setLoading(false);
     }

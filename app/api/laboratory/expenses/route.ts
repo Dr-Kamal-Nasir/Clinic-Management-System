@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import { LaboratoryExpense } from '@/lib/models/LaboratoryExpenses';
-import {LaboratoryRecord} from '@/lib/models/LaboratoryRecord';
+import { LaboratoryRecord } from '@/lib/models/LaboratoryRecord';
 import { getTokenPayload } from '@/lib/auth/jwt';
 import { z } from 'zod';
+
+// Define types and schemas
+type ExpenseType = 'normal' | 'doctor_salary';
+
+interface ExpenseQuery {
+  date?: {
+    $gte: Date;
+    $lte: Date;
+  };
+  expenseType?: ExpenseType;
+  recordedBy?: string;
+}
+
+interface TokenPayload {
+  id: string;
+  role: string;
+}
 
 const expenseSchema = z.object({
   date: z.coerce.date(),
@@ -18,7 +35,7 @@ const expenseSchema = z.object({
 
 export async function GET(req: NextRequest) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   
   if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,9 +45,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const expenseType = searchParams.get('type');
+    const expenseType = searchParams.get('type') as ExpenseType | null;
     
-    let query: any = {};
+    const query: ExpenseQuery = {};
     
     if (startDate && endDate) {
       query.date = {
@@ -39,7 +56,7 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    if (expenseType) {
+    if (expenseType && ['normal', 'doctor_salary'].includes(expenseType)) {
       query.expenseType = expenseType;
     }
 
@@ -48,9 +65,10 @@ export async function GET(req: NextRequest) {
       .populate('recordedBy', 'name');
       
     return NextResponse.json(expenses);
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch expenses';
     return NextResponse.json(
-      { error: 'Failed to fetch expenses' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -58,7 +76,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   
   if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -111,9 +129,10 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create expense';
     return NextResponse.json(
-      { error: error.message || 'Failed to create expense' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -121,7 +140,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   
   if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -154,9 +173,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(
       { message: 'Expense updated successfully', expense: updatedExpense }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update expense';
     return NextResponse.json(
-      { error: error.message || 'Failed to update expense' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -164,7 +184,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   
   if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -187,9 +207,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json(
       { message: 'Expense deleted successfully' }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete expense';
     return NextResponse.json(
-      { error: error.message || 'Failed to delete expense' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

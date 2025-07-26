@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useMemo } from "react";
 import useSWR, { mutate } from "swr";
 import { PlusIcon, PencilIcon, TrashIcon, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,18 +42,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const TEST_TYPES = [
-  "Blood Test",
-  "Stool Test",
-  "Urin Test",
-  "MRI",
-  "CT Scan",
-  "Ultrasound",
-  "ECG",
-  "Other",
-];
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+interface TestTypeOption {
+  value: string;
+  label: string;
+}
 
 interface LaboratoryRecord {
   _id: string;
@@ -64,7 +56,10 @@ interface LaboratoryRecord {
   phoneNumber?: string;
   amountCharged: number;
   amountPaid: number;
-  recordedBy?: { name: string };
+  recordedBy?: {
+    name: string;
+    _id: string;
+  };
 }
 
 interface FormFieldProps {
@@ -90,6 +85,19 @@ interface SummaryCardProps {
   title: string;
   value: number;
 }
+
+const TEST_TYPES: TestTypeOption[] = [
+  { value: "Blood Test", label: "Blood Test" },
+  { value: "Stool Test", label: "Stool Test" },
+  { value: "Urin Test", label: "Urin Test" },
+  { value: "MRI", label: "MRI" },
+  { value: "CT Scan", label: "CT Scan" },
+  { value: "Ultrasound", label: "Ultrasound" },
+  { value: "ECG", label: "ECG" },
+  { value: "Other", label: "Other" },
+];
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const FormField = memo(({ 
   label, 
@@ -198,8 +206,8 @@ export default function LaboratoryRecords() {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
 
-  // Memoized handlers for stable references
-  const handlePatientNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePatientNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => 
+    {
     setPatientName(e.target.value);
   }, []);
 
@@ -228,9 +236,20 @@ export default function LaboratoryRecords() {
     fetcher
   );
 
-  const totalCharged = records?.reduce((sum, r) => sum + r.amountCharged, 0) || 0;
-  const totalPaid = records?.reduce((sum, r) => sum + r.amountPaid, 0) || 0;
-  const totalBalance = totalCharged - totalPaid;
+  const totalCharged = useMemo(() => 
+    records?.reduce((sum, r) => sum + r.amountCharged, 0) || 0, 
+    [records]
+  );
+
+  const totalPaid = useMemo(() => 
+    records?.reduce((sum, r) => sum + r.amountPaid, 0) || 0, 
+    [records]
+  );
+
+  const totalBalance = useMemo(() => 
+    totalCharged - totalPaid, 
+    [totalCharged, totalPaid]
+  );
 
   const resetForm = useCallback(() => {
     setDate(new Date());
@@ -269,7 +288,7 @@ export default function LaboratoryRecords() {
         patientName,
         invoiceNumber,
         testType,
-        phoneNumber,
+        phoneNumber: phoneNumber || undefined,
         amountCharged,
         amountPaid,
       };
@@ -288,14 +307,19 @@ export default function LaboratoryRecords() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Request failed');
+        throw new Error(errorData.message || 'Request failed');
       }
 
       toast.success(`Record ${editMode ? 'updated' : 'created'} successfully`);
       setDialogOpen(false);
       mutate(`/api/laboratory/records?${queryString.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message || 'An error occurred');
+      resetForm();
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : 'An error occurred while saving the record'
+      );
     }
   };
 
@@ -313,8 +337,12 @@ export default function LaboratoryRecords() {
 
       toast.success("Record deleted successfully");
       mutate(`/api/laboratory/records?${queryString.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Delete failed');
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : 'Failed to delete record'
+      );
     }
   };
 
@@ -487,8 +515,8 @@ export default function LaboratoryRecords() {
                 </SelectTrigger>
                 <SelectContent>
                   {TEST_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -507,18 +535,32 @@ export default function LaboratoryRecords() {
               onChange={handleAmountChargedChange}
             />
             <NumberField
-              label="Amount Paid*"
+              label="Amount Paid"
               value={amountPaid}
               onChange={handleAmountPaidChange}
             />
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleSubmit}>
-              {editMode ? 'Update Record' : 'Add Record'}
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setDialogOpen(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {editMode ? 'Update' : 'Create'} Record
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
+};

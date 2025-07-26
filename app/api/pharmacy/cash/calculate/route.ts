@@ -6,9 +6,35 @@ import { Expense } from '@/lib/models/Expense';
 import { getTokenPayload } from '@/lib/auth/jwt';
 import { startOfDay, endOfDay } from 'date-fns';
 
-export async function GET(req: NextRequest) {
+// Define types
+interface TokenPayload {
+  id: string;
+  role: string;
+}
+
+interface DateRange {
+  $gte: Date;
+  $lte: Date;
+}
+
+interface PrescriptionQuery {
+  paymentMethod: 'cash';
+  status: 'completed';
+  createdAt: DateRange;
+}
+
+interface ExpenseQuery {
+  date: DateRange;
+}
+
+interface CalculationResult {
+  cashSales: number;
+  expenses: number;
+}
+
+export async function GET(req: NextRequest): Promise<NextResponse<CalculationResult | { error: string }>> {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   
   // Authorization check
   if (!payload || !(payload.role === 'admin' || payload.role === 'pharmacy')) {
@@ -20,19 +46,21 @@ export async function GET(req: NextRequest) {
     const todayEnd = endOfDay(new Date());
 
     // Get today's cash prescriptions
-    const cashPrescriptions = await Prescription.find({
+    const prescriptionQuery: PrescriptionQuery = {
       paymentMethod: 'cash',
       status: 'completed',
       createdAt: { $gte: todayStart, $lte: todayEnd }
-    });
+    };
 
+    const cashPrescriptions = await Prescription.find(prescriptionQuery);
     const cashSales = cashPrescriptions.reduce((sum, prescription) => sum + prescription.amountPaid, 0);
 
     // Get today's expenses
-    const todayExpenses = await Expense.find({
+    const expenseQuery: ExpenseQuery = {
       date: { $gte: todayStart, $lte: todayEnd }
-    });
+    };
 
+    const todayExpenses = await Expense.find(expenseQuery);
     const expenses = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
     return NextResponse.json({
@@ -40,9 +68,10 @@ export async function GET(req: NextRequest) {
       expenses
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to calculate daily cash';
     return NextResponse.json(
-      { error: error.message || 'Failed to calculate daily cash' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

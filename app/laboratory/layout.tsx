@@ -4,6 +4,14 @@ import { cookies } from 'next/headers';
 import { jwtDecode } from 'jwt-decode';
 import { LaboratorySidebar } from "@/components/LaboratorySidebar";
 
+interface DecodedToken {
+  role?: string;
+  // Add other expected token properties here if needed
+  // Example:
+  // userId: string;
+  // email: string;
+  // exp: number;
+}
 
 export default async function LaboratoryLayout({
   children,
@@ -18,11 +26,11 @@ export default async function LaboratoryLayout({
   }
 
   try {
-    // Decode the token directly in the layout
-    const decoded: any = jwtDecode(accessToken);
+    // Decode the token with proper typing
+    const decoded: DecodedToken = jwtDecode(accessToken);
     
     // Check if the user has the required role
-    if (!['admin', 'laboratory'].includes(decoded.role)) {
+    if (!decoded.role || !['admin', 'laboratory'].includes(decoded.role)) {
       redirect('/unauthorized');
     }
   } catch (error) {
@@ -32,7 +40,7 @@ export default async function LaboratoryLayout({
 
   return (
     <div className="flex h-screen">
-            <LaboratorySidebar />
+      <LaboratorySidebar />
       <main className="flex-1">{children}</main>
     </div>
   );

@@ -1,9 +1,9 @@
 // app/api/pharmacy/prescriptions/recent/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import { Prescription } from '@/lib/models/Prescription';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     await dbConnect();
     

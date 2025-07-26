@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuthStore } from '@/store/useAuthStore';
 import Cookies from 'universal-cookie';
-import {jwtDecode} from 'jwt-decode'; // Add this import
+import { jwtDecode } from 'jwt-decode';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -17,10 +18,10 @@ const formSchema = z.object({
 });
 
 export default function LoginForm() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const router = useRouter();
-  const login = useAuthStore(state => state.login);
+  const login = useAuthStore((state) => state.login);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,7 +53,7 @@ export default function LoginForm() {
       }
 
       // Extract role from token payload
-      const tokenPayload = jwtDecode(data.accessToken) as { role: string };
+      const tokenPayload = jwtDecode<{ role: string }>(data.accessToken);
       
       // Set role in cookie for middleware
       const cookies = new Cookies();
@@ -67,8 +68,8 @@ export default function LoginForm() {
       login(data.user, data.accessToken, data.refreshToken);
       
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }

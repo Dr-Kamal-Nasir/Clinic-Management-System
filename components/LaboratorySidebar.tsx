@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   FileText,
   DollarSign,
-  User,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Home

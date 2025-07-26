@@ -1,11 +1,29 @@
 // components/pharmacy/PDFGenerator.tsx
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { DownloadIcon } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const PDFGenerator = ({ data, title }: { data: any[]; title: string }) => {
+// Define the medicine data type
+interface MedicineData {
+  name: string;
+  batchNumber: string;
+  expiryDate: string | Date;
+  quantity: number;
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+}
+
+// Define the component props
+interface PDFGeneratorProps {
+  data: MedicineData[];
+  title: string;
+}
+
+const PDFGenerator = ({ data, title }: PDFGeneratorProps) => {
   const generatePDF = () => {
     if (data.length === 0) return;
     
@@ -20,8 +38,8 @@ const PDFGenerator = ({ data, title }: { data: any[]; title: string }) => {
     doc.setFontSize(10);
     doc.text(`Report generated on: ${date}`, 14, 22);
     
-    // Prepare data for table
-    const tableData = data.map(item => [
+    // Prepare data for table with proper typing
+    const tableData: (string | number)[][] = data.map(item => [
       item.name,
       item.batchNumber,
       new Date(item.expiryDate).toLocaleDateString(),

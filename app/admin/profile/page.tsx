@@ -47,8 +47,8 @@ export default function UnderConstruction() {
   };
 
   const bubbleAnimation = {
-    y: [0, -20, 0],
-    opacity: [0.6, 1, 0.6],
+    y: [0, -20, 0] as [number, number, number],
+    opacity: [0.6, 1, 0.6] as [number, number, number],
     transition: {
       y: {
         repeat: Infinity,
@@ -75,8 +75,12 @@ export default function UnderConstruction() {
           <div className="relative inline-block">
             <motion.div
               animate={{
-                y: [0, -5, 0],
-                transition: { repeat: Infinity, duration: 3, ease: 'easeInOut' },
+                y: [0, -5, 0] as [number, number, number],
+                transition: { 
+                  repeat: Infinity, 
+                  duration: 3, 
+                  ease: 'easeInOut' as const 
+                },
               }}
               className="absolute -top-6 -left-6 text-blue-500"
             >
@@ -123,6 +127,7 @@ export default function UnderConstruction() {
                 animate={{
                   ...bubbleAnimation,
                   transition: {
+                    ...bubbleAnimation.transition,
                     y: {
                       ...bubbleAnimation.transition.y,
                       duration: 3 + i * 0.5,
@@ -156,7 +161,7 @@ export default function UnderConstruction() {
           variants={itemVariants}
           className="mt-8 text-sm text-blue-700"
         >
-          We'll be back with enhanced diagnostic capabilities soon!
+          We&apos;ll be back with enhanced diagnostic capabilities soon!
         </motion.p>
       </motion.div>
     </div>

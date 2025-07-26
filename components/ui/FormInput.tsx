@@ -1,16 +1,22 @@
-import { Control, Controller } from 'react-hook-form';
+import { Control, Controller, FieldValues, Path } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from './label';
 
-interface FormInputProps {
-  control: Control<any>;
-  name: string;
+interface FormInputProps<T extends FieldValues> {
+  control: Control<T>;
+  name: Path<T>;
   label: string;
   type?: string;
-  placeholder?: string,
+  placeholder?: string;
 }
 
-export const FormInput = ({ control, name, label, type = 'text', placeholder }: FormInputProps) => (
+export const FormInput = <T extends FieldValues>({
+  control,
+  name,
+  label,
+  type = 'text',
+  placeholder
+}: FormInputProps<T>) => (
   <Controller
     control={control}
     name={name}
@@ -20,6 +26,7 @@ export const FormInput = ({ control, name, label, type = 'text', placeholder }: 
         <Input 
           id={name} 
           type={type} 
+          placeholder={placeholder}
           {...field} 
           value={field.value ?? ''}
         />

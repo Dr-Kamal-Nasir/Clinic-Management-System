@@ -1,5 +1,7 @@
 // app/dashboard/components/admin-ceo/ProfitCalculator.tsx
+
 'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Cell, CartesianGrid } from 'recharts';
@@ -7,7 +9,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const COLORS = ['#10b981', '#f97316'];
 
-export default function ProfitCalculator({ data, loading }: any) {
+interface ProfitData {
+  name: string;
+  profit: number;
+  color: string;
+}
+
+interface Totals {
+  labProfit: number;
+  pharmaProfit: number;
+  totalIncome: number;
+  labIncome: number;
+  pharmaIncome: number;
+  totalExpenses: number;
+  labExpenses: number;
+  pharmaExpenses: number;
+  netProfit: number;
+}
+
+interface ProfitCalculatorProps {
+  data: {
+    totals: Totals;
+  };
+  loading: boolean;
+}
+
+export default function ProfitCalculator({ data, loading }: ProfitCalculatorProps) {
   if (loading || !data) {
     return (
       <Card className="mb-8">
@@ -37,7 +64,7 @@ export default function ProfitCalculator({ data, loading }: any) {
     );
   }
 
-  const profitData = [
+  const profitData: ProfitData[] = [
     {
       name: 'Laboratory',
       profit: data.totals.labProfit,

@@ -18,7 +18,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const EXPENSE_TYPES = [
+interface ExpenseType {
+  value: 'normal' | 'doctor_salary';
+  label: string;
+}
+
+interface Expense {
+  _id: string;
+  date: string;
+  description: string;
+  amount: number;
+  expenseType: 'normal' | 'doctor_salary';
+  doctorName?: string;
+  fromDate?: string;
+  toDate?: string;
+  percentage?: number;
+  calculatedFromRecords?: number;
+}
+
+interface Record {
+  _id: string;
+  amountPaid: number;
+}
+
+const EXPENSE_TYPES: ExpenseType[] = [
   { value: 'normal', label: 'Normal Expense' },
   { value: 'doctor_salary', label: 'Doctor Salary' }
 ];
@@ -40,11 +63,11 @@ export default function LaboratoryExpenses() {
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentExpense, setCurrentExpense] = useState<any>(null);
+  const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: expenses, isLoading } = useSWR(
+  const { data: expenses, isLoading } = useSWR<Expense[]>(
     `/api/laboratory/expenses?${new URLSearchParams({
       startDate: filterStartDate?.toISOString() || '',
       endDate: filterEndDate?.toISOString() || ''
@@ -53,20 +76,23 @@ export default function LaboratoryExpenses() {
   );
 
   const filteredExpenses = useMemo(() => {
-  if (!expenses) return [];
-  
-  const searchTermLower = searchTerm.toLowerCase();
-  
-  return expenses.filter((expense: any) => {
-    const descriptionMatch = expense.description.toLowerCase().includes(searchTermLower);
-    const doctorNameMatch = expense.doctorName && 
-      expense.doctorName.toLowerCase().includes(searchTermLower);
+    if (!expenses) return [];
     
-    return descriptionMatch || doctorNameMatch;
-  });
-}, [expenses, searchTerm]);
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    return expenses.filter((expense) => {
+      const descriptionMatch = expense.description.toLowerCase().includes(searchTermLower);
+      const doctorNameMatch = expense.doctorName && 
+        expense.doctorName.toLowerCase().includes(searchTermLower);
+      
+      return descriptionMatch || doctorNameMatch;
+    });
+  }, [expenses, searchTerm]);
 
-  const totalExpenses = filteredExpenses.reduce((sum: number, expense: any) => sum + expense.amount, 0);
+  const totalExpenses = useMemo(() => 
+    filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0), 
+    [filteredExpenses]
+  );
 
   const calculateDoctorSalary = useCallback(async () => {
     if (!fromDate || !toDate) return;
@@ -79,8 +105,8 @@ export default function LaboratoryExpenses() {
       
       if (!response.ok) throw new Error('Failed to fetch records');
       
-      const records = await response.json();
-      const total = records.reduce((sum: number, record: any) => sum + record.amountPaid, 0);
+      const records: Record[] = await response.json();
+      const total = records.reduce((sum, record) => sum + record.amountPaid, 0);
       setCalculatedAmount(total);
       setAmount(total * (percentage / 100));
       toast.success(`Calculated $${total.toFixed(2)} from records`);
@@ -103,7 +129,7 @@ export default function LaboratoryExpenses() {
     setCurrentExpense(null);
   };
 
-  const handleEditClick = (expense: any) => {
+  const handleEditClick = (expense: Expense) => {
     setCurrentExpense(expense);
     setDate(new Date(expense.date));
     setDescription(expense.description);
@@ -132,8 +158,8 @@ export default function LaboratoryExpenses() {
 
       toast.success("Expense deleted successfully");
       mutate('/api/laboratory/expenses');
-    } catch (error: any) {
-      toast.error(error.message || 'Delete failed');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Delete failed');
     } finally {
       setIsDeleting(false);
     }
@@ -160,7 +186,8 @@ export default function LaboratoryExpenses() {
         doctorName: expenseType === 'doctor_salary' ? doctorName : undefined,
         fromDate: expenseType === 'doctor_salary' ? fromDate : undefined,
         toDate: expenseType === 'doctor_salary' ? toDate : undefined,
-        percentage: expenseType === 'doctor_salary' ? percentage : undefined
+        percentage: expenseType === 'doctor_salary' ? percentage : undefined,
+        calculatedFromRecords: expenseType === 'doctor_salary' ? calculatedAmount : undefined
       };
 
       const url = currentExpense 
@@ -183,8 +210,8 @@ export default function LaboratoryExpenses() {
       setDialogOpen(false);
       mutate('/api/laboratory/expenses');
       resetForm();
-    } catch (error: any) {
-      toast.error(error.message || 'An error occurred');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -208,8 +235,8 @@ export default function LaboratoryExpenses() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex justify-center items-end-safe">
+              <SearchIcon className="absolute left-3 top-6 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search expenses..."
                 value={searchTerm}

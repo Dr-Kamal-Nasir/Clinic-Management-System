@@ -82,9 +82,10 @@ export async function POST(req: NextRequest) {
       { message: 'Expense recorded successfully', expense: newExpense },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Sever error';
     return NextResponse.json(
-      { error: error.message || 'Server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -127,9 +128,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(
       { message: 'Expense updated successfully', expense: updatedExpense }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Sever error';
     return NextResponse.json(
-      { error: error.message || 'Server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -162,9 +164,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json(
       { message: 'Expense deleted successfully' }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Sever error';
     return NextResponse.json(
-      { error: error.message || 'Server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

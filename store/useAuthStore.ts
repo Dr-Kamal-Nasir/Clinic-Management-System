@@ -29,6 +29,11 @@ interface AuthState {
   clearError: () => void;
 }
 
+interface TokenPayload {
+  exp: number;
+  [key: string]: unknown;
+}
+
 const cookies = new Cookies();
 
 export const useAuthStore = create<AuthState>()(
@@ -81,19 +86,19 @@ export const useAuthStore = create<AuthState>()(
       },
       
       initialize: async () => {
-        const accessToken = cookies.get('accessToken');
-        const refreshToken = cookies.get('refreshToken');
+        const accessToken = cookies.get<string>('accessToken');
+        const refreshToken = cookies.get<string>('refreshToken');
         
         if (accessToken) {
           try {
-            const decoded = jwtDecode(accessToken) as { exp: number };
+            const decoded = jwtDecode<TokenPayload>(accessToken);
             if (decoded.exp * 1000 > Date.now()) {
               const response = await fetch('/api/auth/me', {
                 headers: { Authorization: `Bearer ${accessToken}` }
               });
               
               if (response.ok) {
-                const user = await response.json();
+                const user = await response.json() as User;
                 set({ 
                   user,
                   accessToken,
@@ -122,7 +127,7 @@ export const useAuthStore = create<AuthState>()(
       },
       
       refreshAccessToken: async () => {
-        const refreshToken = cookies.get('refreshToken');
+        const refreshToken = cookies.get<string>('refreshToken');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -137,7 +142,7 @@ export const useAuthStore = create<AuthState>()(
           });
           
           if (response.ok) {
-            const data = await response.json();
+            const data = await response.json() as { accessToken: string; user: User };
             const { accessToken, user } = data;
 
             cookies.set('accessToken', accessToken, { 
@@ -155,10 +160,10 @@ export const useAuthStore = create<AuthState>()(
               error: null 
             });
           } else {
-            const errorData = await response.json();
+            const errorData = await response.json() as { error?: string };
             throw new Error(errorData.error || 'Failed to refresh token');
           }
-        } catch (error: any) {
+        } catch (error) {
           get().logout();
           throw error;
         }

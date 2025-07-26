@@ -12,6 +12,15 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Badge } from '@/components/ui/badge';
+
+interface Medicine {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  currentQuantity: number;
+  sellingPrice: number;
+}
 
 interface MedicineItem {
   medicine: string;
@@ -52,113 +61,45 @@ interface Prescription {
   };
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+interface User {
+  id: string;
+  name: string;
+  // Add other user properties as needed
+}
 
-const generatePrescriptionPDF = (prescription: Prescription) => {
-  const doc = new jsPDF();
-  const date = new Date(prescription.createdAt).toLocaleDateString();
-  
-  // Header
-  doc.setFontSize(18);
-  doc.text('MEDICAL PRESCRIPTION', 105, 20, { align: 'center' });
-  
-  doc.setFontSize(12);
-  doc.text(`Invoice #: ${prescription.invoiceNumber}`, 14, 30);
-  doc.text(`Date: ${date}`, 14, 38);
-  
-  // Clinic Info (replace with your clinic details)
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('Your Clinic Name', 105, 30, { align: 'center' });
-  doc.text('123 Medical Street, City', 105, 35, { align: 'center' });
-  doc.text('Phone: (123) 456-7890', 105, 40, { align: 'center' });
-  
-  // Patient Info
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-  doc.text('Patient Information:', 14, 50);
-  doc.text(`Name: ${prescription.patientName}`, 20, 58);
-  doc.text(`Phone: ${prescription.patientPhone}`, 20, 66);
-  
-  // Prescription Items
-  doc.setFontSize(12);
-  doc.text('Prescribed Items:', 14, 80);
-  
-  const itemData = prescription.items?.map(item => [
-    item.medicine?.name || 'Unknown',
-    item.quantity || 0,
-    `$${(item.unitPrice || 0).toFixed(2)}`,
-    `${item.discount || 0}%`,
-    `$${(item.total || 0).toFixed(2)}`
-  ]) || [];
-  
-  autoTable(doc, {
-    head: [['Medicine', 'Qty', 'Unit Price', 'Discount', 'Total']],
-    body: itemData,
-    startY: 85,
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [59, 130, 246] },
-    columnStyles: {
-      0: { cellWidth: 70 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 30 }
-    }
-  });
-  
-  // Summary
-  const finalY = (doc as any).lastAutoTable.finalY + 15;
-  doc.setFontSize(12);
-  doc.text('Payment Summary:', 14, finalY);
-  
-  autoTable(doc, {
-    body: [
-      ['Subtotal:', `$${(prescription.totalAmount || 0).toFixed(2)}`],
-      ['Amount Paid:', `$${(prescription.amountPaid || 0).toFixed(2)}`],
-      ['Payment Method:', prescription.paymentMethod],
-      ['Status:', prescription.status]
-    ],
-    startY: finalY + 5,
-    styles: { fontSize: 10 },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 50 },
-      1: { cellWidth: 40 }
-    }
-  });
-  
-  // Footer
-  const lastY = (doc as any).lastAutoTable.finalY + 15;
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('Prescribed by:', 14, lastY);
-  doc.text(prescription.issuedBy?.name || 'System', 14, lastY + 5);
-  doc.text('Thank you for your visit!', 105, lastY + 10, { align: 'center' });
-  
-  // Save the PDF
-  doc.save(`prescription-${prescription.invoiceNumber}.pdf`);
-};
+interface AuthStore {
+  user: User | null;
+  // Add other auth store properties as needed
+}
+
+interface JSPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY: number;
+  };
+}
+
+const fetcher = (url: string): Promise<{ data: any[] }> => fetch(url).then(res => res.json());
 
 export default function PharmacyPage() {
-  const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('issue');
-  const [patientName, setPatientName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const { user } = useAuthStore() as AuthStore;
+  const [activeTab, setActiveTab] = useState<'issue' | 'history'>('issue');
+  const [patientName, setPatientName] = useState<string>('');
+  const [patientPhone, setPatientPhone] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [items, setItems] = useState<MedicineItem[]>([]);
-  const [selectedMedicine, setSelectedMedicine] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now()}`);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMedicine, setSelectedMedicine] = useState<string>('');
+  const [invoiceNumber, setInvoiceNumber] = useState<string>(`INV-${Date.now()}`);
+  const [searchTerm, setSearchTerm] = useState<string>('');
   
-  const { data: medicines, isLoading: isLoadingStock, mutate: mutateStock } = useSWR('/api/pharmacy/stock', fetcher);
-  const { data: prescriptionsData, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR('/api/pharmacy/prescriptions', fetcher);
+  const { data: medicines, isLoading: isLoadingStock, mutate: mutateStock } = useSWR<{ data: Medicine[] }>('/api/pharmacy/stock', fetcher);
+  const { data: prescriptionsData, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR<{ data: Prescription[] }>('/api/pharmacy/prescriptions', fetcher);
   
   const medicinesData = medicines?.data || [];
   const prescriptions = prescriptionsData?.data || [];
 
   const filteredMedicines = medicinesData
-    .filter((m: any) => m.currentQuantity > 0)
-    .filter((m: any) => 
+    .filter((m: Medicine) => m.currentQuantity > 0)
+    .filter((m: Medicine) => 
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.batchNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -170,7 +111,7 @@ export default function PharmacyPage() {
   const addItem = () => {
     if (!selectedMedicine) return;
     
-    const medicine = medicinesData.find((m: any) => m._id === selectedMedicine);
+    const medicine = medicinesData.find((m: Medicine) => m._id === selectedMedicine);
     if (!medicine) return;
     
     const existingItem = items.find(item => item.medicine === selectedMedicine);
@@ -199,7 +140,7 @@ export default function PharmacyPage() {
     setSearchTerm('');
   };
 
-  const updateItem = (medicineId: string, field: string, value: any) => {
+  const updateItem = (medicineId: string, field: keyof MedicineItem, value: number) => {
     setItems(items.map(item => {
       if (item.medicine === medicineId) {
         const updatedItem = { ...item, [field]: value };
@@ -219,15 +160,98 @@ export default function PharmacyPage() {
     setItems(items.filter(item => item.medicine !== medicineId));
   };
 
-  const calculateTotal = () => {
+  const calculateTotal = (): number => {
     return items.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const generatePrescriptionPDF = (prescription: Prescription) => {
+    const doc = new jsPDF() as JSPDFWithAutoTable;
+    const date = new Date(prescription.createdAt).toLocaleDateString();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.text('MEDICAL PRESCRIPTION', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text(`Invoice #: ${prescription.invoiceNumber}`, 14, 30);
+    doc.text(`Date: ${date}`, 14, 38);
+    
+    // Clinic Info (replace with your clinic details)
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Your Clinic Name', 105, 30, { align: 'center' });
+    doc.text('123 Medical Street, City', 105, 35, { align: 'center' });
+    doc.text('Phone: (123) 456-7890', 105, 40, { align: 'center' });
+    
+    // Patient Info
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('Patient Information:', 14, 50);
+    doc.text(`Name: ${prescription.patientName}`, 20, 58);
+    doc.text(`Phone: ${prescription.patientPhone}`, 20, 66);
+    
+    // Prescription Items
+    doc.setFontSize(12);
+    doc.text('Prescribed Items:', 14, 80);
+    
+    const itemData = prescription.items?.map(item => [
+      item.medicine?.name || 'Unknown',
+      item.quantity?.toString() || '0',
+      `$${(item.unitPrice || 0).toFixed(2)}`,
+      `${item.discount || 0}%`,
+      `$${(item.total || 0).toFixed(2)}`
+    ]) || [];
+    
+    autoTable(doc, {
+      head: [['Medicine', 'Qty', 'Unit Price', 'Discount', 'Total']],
+      body: itemData,
+      startY: 85,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [59, 130, 246] },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 30 }
+      }
+    });
+    
+    // Summary
+    const finalY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : 100;
+    doc.setFontSize(12);
+    doc.text('Payment Summary:', 14, finalY);
+    
+    autoTable(doc, {
+      body: [
+        ['Subtotal:', `$${(prescription.totalAmount || 0).toFixed(2)}`],
+        ['Amount Paid:', `$${(prescription.amountPaid || 0).toFixed(2)}`],
+        ['Payment Method:', prescription.paymentMethod],
+        ['Status:', prescription.status]
+      ],
+      startY: finalY + 5,
+      styles: { fontSize: 10 },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 50 },
+        1: { cellWidth: 40 }
+      }
+    });
+    
+    // Footer
+    const lastY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : 120;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Prescribed by:', 14, lastY);
+    doc.text(prescription.issuedBy?.name || 'System', 14, lastY + 5);
+    doc.text('Thank you for your visit!', 105, lastY + 10, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`prescription-${prescription.invoiceNumber}.pdf`);
   };
 
   const handleSubmit = async () => {
     if (!patientName || !patientPhone || items.length === 0) {
-      toast.error('Validation Error', {
-        description: 'Please fill all required fields',
-      });
+      toast.error('Please fill all required fields');
       return;
     }
 
@@ -253,32 +277,27 @@ export default function PharmacyPage() {
         })
       });
 
-      if (response.ok) {
-        toast.success('Success', {
-          description: 'Prescription issued successfully',
-        });
-        
-        setPatientName('');
-        setPatientPhone('');
-        setItems([]);
-        setPaymentMethod('cash');
-        mutateStock();
-        mutatePrescriptions();
-        setActiveTab('history');
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to issue prescription');
       }
-    } catch (error: any) {
-      toast.error('Error', {
-        description: error.message || 'Failed to issue prescription',
-      });
+
+      toast.success('Prescription issued successfully');
+      setPatientName('');
+      setPatientPhone('');
+      setItems([]);
+      setPaymentMethod('cash');
+      mutateStock();
+      mutatePrescriptions();
+      setActiveTab('history');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to issue prescription');
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab as (value: string)=> void} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="issue">Issue Medicine</TabsTrigger>
           <TabsTrigger value="history">Prescription History</TabsTrigger>
@@ -337,7 +356,7 @@ export default function PharmacyPage() {
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-auto">
                       {filteredMedicines.length > 0 ? (
-                        filteredMedicines.map((medicine: any) => (
+                        filteredMedicines.map((medicine: Medicine) => (
                           <SelectItem key={medicine._id} value={medicine._id}>
                             <div className="flex flex-col">
                               <span>{medicine.name}</span>
@@ -420,24 +439,22 @@ export default function PharmacyPage() {
                           step="1"
                         />
                       </div>
-                      <div className="col-span-1 flex items-center justify-end">
-                        ${item.total.toFixed(2)}
+                      <div className="col-span-1 flex items-center justify-between">
+                        <span>${item.total.toFixed(2)}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => removeItem(item.medicine)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
                       </div>
                     </div>
                   ))}
-                  
-                  <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {items.length} item{items.length !== 1 ? 's' : ''}
-                    </div>
-                    <div className="font-bold text-lg">
-                      Total: ${calculateTotal().toFixed(2)}
-                    </div>
-                  </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div>
                   <Label>Payment Method</Label>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -451,22 +468,27 @@ export default function PharmacyPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-end">
-                  <Button 
-                    className="w-full"
-                    size="lg"
-                    onClick={handleSubmit}
-                    disabled={items.length === 0}
-                  >
-                    <CheckCircle className="mr-2 h-5 w-5" />
-                    Issue Prescription
-                  </Button>
+                <div className="md:col-span-2">
+                  <div className="flex justify-end items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">Total Amount</div>
+                      <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
+                    </div>
+                    <Button 
+                      size="lg" 
+                      onClick={handleSubmit}
+                      disabled={items.length === 0}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Complete Prescription
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="history">
           <Card>
             <CardHeader>
@@ -474,65 +496,63 @@ export default function PharmacyPage() {
             </CardHeader>
             <CardContent>
               {isLoadingPrescriptions ? (
-                <div className="flex justify-center items-center h-40">
+                <div className="flex items-center justify-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : prescriptions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No prescriptions found
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {prescriptions.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      No prescriptions found
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg divide-y">
-                      {prescriptions.map((prescription: Prescription) => (
-                        <div key={prescription._id} className="p-4 group">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium">Invoice #{prescription.invoiceNumber}</h3>
-                              <p className="text-sm text-gray-500">
-                                Patient: {prescription.patientName} ({prescription.patientPhone})
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Issued by: {prescription.issuedBy?.name || 'System'} on {new Date(prescription.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-medium">
-                                ${(prescription.totalAmount || 0).toFixed(2)}
-                              </p>
-                              <p className={`text-sm ${
-                                prescription.status === 'completed' ? 'text-green-500' : 
-                                prescription.status === 'cancelled' ? 'text-red-500' : 'text-yellow-500'
-                              }`}>
-                                {prescription.status?.charAt(0).toUpperCase() + prescription.status?.slice(1)}
-                              </p>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => generatePrescriptionPDF(prescription)}
-                              >
-                                <DownloadIcon className="h-4 w-4 mr-1" />
-                                Download PDF
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            {prescription.items?.map((item: PrescriptionItem) => (
-                              <div key={item._id} className="flex justify-between text-sm py-1">
-                                <span>
-                                  {item.medicine?.name || 'Unknown Medicine'} × {item.quantity || 0}
-                                  {(item.discount || 0) > 0 && ` (${item.discount}% off)`}
-                                </span>
-                                <span>${(item.total || 0).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
+                  {prescriptions.map((prescription) => (
+                    <div key={prescription._id} className="border rounded-lg p-4">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+                        <div>
+                          <h3 className="font-medium">Invoice #{prescription.invoiceNumber}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(prescription.createdAt).toLocaleDateString()} • {prescription.patientName} ({prescription.patientPhone})
+                          </p>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">
+                            {prescription.paymentMethod}
+                          </Badge>
+                          <Badge variant={prescription.status === 'completed' ? 'default' : 'secondary'}>
+                            {prescription.status}
+                          </Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => generatePrescriptionPDF(prescription)}
+                          >
+                            <DownloadIcon className="mr-2 h-4 w-4" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="border-t pt-2">
+                        <div className="grid grid-cols-12 gap-2 font-medium mb-1">
+                          <div className="col-span-6">Medicine</div>
+                          <div className="col-span-2 text-right">Qty</div>
+                          <div className="col-span-2 text-right">Price</div>
+                          <div className="col-span-2 text-right">Total</div>
+                        </div>
+                        {prescription.items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 text-sm">
+                            <div className="col-span-6">{item.medicine?.name || 'Unknown'}</div>
+                            <div className="col-span-2 text-right">{item.quantity}</div>
+                            <div className="col-span-2 text-right">${item.unitPrice?.toFixed(2)}</div>
+                            <div className="col-span-2 text-right">${item.total?.toFixed(2)}</div>
+                          </div>
+                        ))}
+                        <div className="grid grid-cols-12 gap-2 border-t mt-2 pt-2 font-medium">
+                          <div className="col-span-10 text-right">Total Amount:</div>
+                          <div className="col-span-2 text-right">${prescription.totalAmount?.toFixed(2)}</div>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </CardContent>

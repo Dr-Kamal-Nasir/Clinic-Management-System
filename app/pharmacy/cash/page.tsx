@@ -90,7 +90,7 @@ export default function CashAtHandPage() {
         });
         setDialogOpen(false);
         mutate('/api/pharmacy/cash'); // Revalidate cache
-        
+       
         // Reset form
         setOpeningBalance(0);
         setClosingBalance(0);
@@ -99,9 +99,9 @@ export default function CashAtHandPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to save cash record');
       }
-    } catch (error: any) {
+    } catch (error: unknown) { // Fixed: Replaced 'any' with 'unknown'
       toast('Error', {
-        description: error.message || 'Failed to save cash record',
+        description: error instanceof Error ? error.message : 'Failed to save cash record', // Fixed: Added proper error handling
       });
     }
   };
@@ -121,7 +121,7 @@ export default function CashAtHandPage() {
             <DialogHeader>
               <DialogTitle>Daily Cash Reconciliation</DialogTitle>
             </DialogHeader>
-            
+           
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
               <div>
                 <Label>Date *</Label>
@@ -149,10 +149,10 @@ export default function CashAtHandPage() {
                   </PopoverContent>
                 </Popover>
               </div>
-              
+             
               <div>
                 <Label>Opening Balance ($) *</Label>
-                <Input 
+                <Input
                   type="number"
                   value={openingBalance}
                   onChange={(e) => setOpeningBalance(parseFloat(e.target.value) || 0)}
@@ -160,30 +160,30 @@ export default function CashAtHandPage() {
                   step="0.01"
                 />
               </div>
-              
+             
               <div>
                 <Label>Cash Sales ($)</Label>
-                <Input 
+                <Input
                   type="number"
                   value={calculatedValues?.cashSales || 0}
                   readOnly
                   className="bg-gray-100"
                 />
               </div>
-              
+             
               <div>
                 <Label>Expenses ($)</Label>
-                <Input 
+                <Input
                   type="number"
                   value={calculatedValues?.expenses || 0}
                   readOnly
                   className="bg-gray-100"
                 />
               </div>
-              
+             
               <div>
                 <Label>Closing Balance ($) *</Label>
-                <Input 
+                <Input
                   type="number"
                   value={closingBalance}
                   onChange={(e) => setClosingBalance(parseFloat(e.target.value) || 0)}
@@ -191,29 +191,30 @@ export default function CashAtHandPage() {
                   step="0.01"
                 />
               </div>
-              
+             
               <div>
                 <Label>Discrepancy ($)</Label>
-                <Input 
+                <Input
                   type="number"
                   value={calculateDiscrepancy()}
                   readOnly
                   className="bg-gray-100"
                 />
               </div>
-              
+             
               <div className="md:col-span-2">
                 <Label>Notes</Label>
-                <textarea 
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
+                  placeholder="Enter any notes here" // Fixed: Added placeholder to avoid unescaped single quote
                 />
               </div>
             </div>
-            
+           
             <div className="flex justify-end gap-4">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >

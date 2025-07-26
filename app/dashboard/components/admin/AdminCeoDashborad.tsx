@@ -111,6 +111,31 @@ type LabExpense = {
   doctorName?: string;
 };
 
+type TestTypeData = {
+  name: string;
+  value: number;
+};
+
+type ExpenseTypeData = {
+  name: string;
+  value: number;
+};
+
+type LabMetrics = {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  testTypeData: TestTypeData[];
+  expenseTypeData: ExpenseTypeData[];
+};
+
+type MonthlyLabData = {
+  name: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+};
+
 // Fetcher function
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -156,7 +181,7 @@ export default function PharmacyDashboard() {
   );
 
   // Calculate metrics
-  const labMetrics = useMemo(() => {
+  const labMetrics = useMemo<LabMetrics | null>(() => {
     if (!labRecords || !labExpenses) return null;
 
     const totalRevenue = labRecords.reduce(
@@ -170,13 +195,13 @@ export default function PharmacyDashboard() {
     const netProfit = totalRevenue - totalExpenses;
 
     // Group by test type
-    const testTypeData = labRecords.reduce((acc: any, record) => {
+    const testTypeData = labRecords.reduce((acc: Record<string, number>, record) => {
       acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
       return acc;
     }, {});
 
     // Group by expense type
-    const expenseTypeData = labExpenses.reduce((acc: any, expense) => {
+    const expenseTypeData = labExpenses.reduce((acc: Record<string, number>, expense) => {
       const type =
         expense.expenseType === "doctor_salary"
           ? "Doctor Salaries"
@@ -201,48 +226,48 @@ export default function PharmacyDashboard() {
   }, [labRecords, labExpenses]);
 
   // Monthly data for line chart
-  const monthlyLabData = useMemo(() => {
-  if (!labRecords || !labExpenses) return [];
+  const monthlyLabData = useMemo<MonthlyLabData[]>(() => {
+    if (!labRecords || !labExpenses) return [];
 
-  // Group records by month
-  const monthlyRecords: Record<string, number> = {};
-  labRecords.forEach((record) => {
-    const month = safeFormat(record.orderedDate, 'MMM yyyy');
-    if (month !== 'N/A') {
-      monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
-    }
-  });
-
-  // Group expenses by month
-  const monthlyExpenses: Record<string, number> = {};
-  labExpenses.forEach((expense) => {
-    const month = safeFormat(expense.date, 'MMM yyyy');
-    if (month !== 'N/A') {
-      monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
-    }
-  });
-
-  // Combine data
-  const allMonths = [...new Set([
-    ...Object.keys(monthlyRecords),
-    ...Object.keys(monthlyExpenses)
-  ])].filter(month => month !== 'N/A');
-
-  return allMonths
-    .map(month => ({
-      name: month,
-      revenue: monthlyRecords[month] || 0,
-      expenses: monthlyExpenses[month] || 0,
-      profit: (monthlyRecords[month] || 0) - (monthlyExpenses[month] || 0)
-    }))
-    .sort((a, b) => {
-      const dateA = new Date(a.name);
-      const dateB = new Date(b.name);
-      return isNaN(dateA.getTime()) || isNaN(dateB.getTime()) 
-        ? a.name.localeCompare(b.name) 
-        : dateA.getTime() - dateB.getTime();
+    // Group records by month
+    const monthlyRecords: Record<string, number> = {};
+    labRecords.forEach((record) => {
+      const month = safeFormat(record.orderedDate, 'MMM yyyy');
+      if (month !== 'N/A') {
+        monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
+      }
     });
-}, [labRecords, labExpenses]);
+
+    // Group expenses by month
+    const monthlyExpenses: Record<string, number> = {};
+    labExpenses.forEach((expense) => {
+      const month = safeFormat(expense.date, 'MMM yyyy');
+      if (month !== 'N/A') {
+        monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
+      }
+    });
+
+    // Combine data
+    const allMonths = [...new Set([
+      ...Object.keys(monthlyRecords),
+      ...Object.keys(monthlyExpenses)
+    ])].filter(month => month !== 'N/A');
+
+    return allMonths
+      .map(month => ({
+        name: month,
+        revenue: monthlyRecords[month] || 0,
+        expenses: monthlyExpenses[month] || 0,
+        profit: (monthlyRecords[month] || 0) - (monthlyExpenses[month] || 0)
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.name);
+        const dateB = new Date(b.name);
+        return isNaN(dateA.getTime()) || isNaN(dateB.getTime()) 
+          ? a.name.localeCompare(b.name) 
+          : dateA.getTime() - dateB.getTime();
+      });
+  }, [labRecords, labExpenses]);
 
   // Calculate percentage changes
   const salesChange = 12.5;

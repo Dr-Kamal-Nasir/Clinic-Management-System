@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { PlusIcon, PrinterIcon, SearchIcon, Trash2Icon, PencilIcon, CalendarIcon } from 'lucide-react';
+import { PrinterIcon, SearchIcon, Trash2Icon, PencilIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,10 +14,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { MedicineStockForm } from '@/components/pharmacy/MedicineInventoryForm';
-import { DateRange } from 'react-day-picker';
-import { format, subDays } from 'date-fns';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { Label } from '@/components/ui/label';
+
 
 interface MedicineStock {
   _id: string;
@@ -36,8 +33,8 @@ interface MedicineStock {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export default function InventoryManagementPage() {
-  const { user } = useAuthStore();
+export default function InventoryManagementPage() 
+{
   const [searchTerm, setSearchTerm] = useState('');
   const [editItem, setEditItem] = useState<MedicineStock | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);

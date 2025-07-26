@@ -1,4 +1,5 @@
 // components/pharmacy/MedicineStockForm.tsx
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +16,7 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 
-// Fixed schema with proper number types
+// Define the schema with proper types
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   batchNumber: z.string().min(1, 'Batch number is required'),
@@ -33,17 +34,37 @@ const formSchema = z.object({
   description: z.string().optional(),
 });
 
+// Define the medicine data type
+interface Medicine {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  expiryDate: Date;
+  originalQuantity: number;
+  currentQuantity: number;
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+  description?: string;
+}
+
+// Define the form values type
+type FormValues = z.infer<typeof formSchema>;
+
+// Define the component props
+interface MedicineStockFormProps {
+  initialData?: Medicine;
+  onSuccess: () => void;
+}
+
 export default function MedicineStockForm({ 
   initialData,
   onSuccess 
-}: {
-  initialData?: any;
-  onSuccess: () => void;
-}) {
+}: MedicineStockFormProps) {
   const [loading, setLoading] = useState(false);
   const isEditMode = !!initialData;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       name: '',
@@ -57,7 +78,7 @@ export default function MedicineStockForm({
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
       const url = initialData 
@@ -66,8 +87,8 @@ export default function MedicineStockForm({
       
       const method = initialData ? 'PUT' : 'POST';
       
-      // Prepare data for API
-      const payload: any = { ...values };
+      // Prepare data for API with proper typing
+      const payload: Partial<FormValues> = { ...values };
       
       // For new items, set currentQuantity = originalQuantity
       if (!isEditMode) {
@@ -87,10 +108,10 @@ export default function MedicineStockForm({
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { error?: string };
 
       if (response.ok) {
-        toast('Success',{
+        toast('Success', {
           description: initialData 
             ? 'Medicine updated successfully' 
             : 'Medicine added successfully',
@@ -99,9 +120,11 @@ export default function MedicineStockForm({
       } else {
         throw new Error(data.error || 'Failed to save medicine');
       }
-    } catch (error: any) {
-      toast('Error',{
-        description: error.message || 'Could not save medicine',
+    } catch (error: unknown) {
+      toast('Error', {
+        description: error instanceof Error 
+          ? error.message 
+          : 'Could not save medicine',
       });
     } finally {
       setLoading(false);
@@ -136,7 +159,7 @@ export default function MedicineStockForm({
                   <Input 
                     placeholder="Enter batch number" 
                     {...field} 
-                    disabled={isEditMode} // Disable editing for existing batches
+                    disabled={isEditMode}
                   />
                 </FormControl>
                 <FormMessage />
@@ -209,7 +232,7 @@ export default function MedicineStockForm({
                       <Input 
                         type="number" 
                         placeholder="Adjust current stock" 
-                        value={field.value}
+                        value={field.value ?? ''}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                         min={0}
                         max={initialData.originalQuantity}
@@ -230,8 +253,8 @@ export default function MedicineStockForm({
                       <Input 
                         type="number" 
                         placeholder="Quantity to add" 
-                        value={field.value || ''}
-                        onChange={(e) => field.onChange(Number(e.target.value) || undefined)}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                         min={0}
                       />
                     </FormControl>
@@ -253,8 +276,8 @@ export default function MedicineStockForm({
                             type="number" 
                             step="0.01"
                             placeholder="Unit price" 
-                            value={field.value || ''}
-                            onChange={(e) => field.onChange(Number(e.target.value) || undefined)}
+                            value={field.value ?? ''}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -271,8 +294,8 @@ export default function MedicineStockForm({
                             type="number" 
                             step="0.01"
                             placeholder="Selling price" 
-                            value={field.value || ''}
-                            onChange={(e) => field.onChange(Number(e.target.value) || undefined)}
+                            value={field.value ?? ''}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />

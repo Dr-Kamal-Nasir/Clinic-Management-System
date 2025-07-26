@@ -1,29 +1,59 @@
-//app/api/pharmacy/stock/[id]/route.ts
-
+// app/api/pharmacy/stock/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { MedicineStock } from "@/lib/models/MedicineStock";
 import dbConnect from "@/lib/dbConnect";
 import { getTokenPayload } from "@/lib/auth/jwt";
 import { z } from "zod";
 
+// Define types
+interface TokenPayload {
+  id: string;
+  role: string;
+}
+
+interface MedicineUpdateData {
+  name?: string;
+  batchNumber?: string;
+  expiryDate?: Date;
+  originalQuantity?: number;
+  currentQuantity?: number;
+  unitPrice?: number;
+  sellingPrice?: number;
+  supplier?: string;
+}
+
+interface NewBatchData extends MedicineUpdateData {
+  name: string;
+  batchNumber: string;
+  originalQuantity: number;
+  currentQuantity: number;
+}
+
+interface ResponseData {
+  updatedStock?: MedicineUpdateData;
+  newBatch?: NewBatchData;
+  success?: boolean;
+  error?: string;
+}
+
 const MedicineSchema = z.object({
   name: z.string().min(2).optional(),
   batchNumber: z.string().min(1).optional(),
   expiryDate: z.coerce.date().optional(),
-  originalQuantity: z.number().min(0).optional(), // Not editable
-  currentQuantity: z.number().min(0).optional(), // Editable for stock adjustment
-  additionalQuantity: z.number().min(0).optional(), // New stock to add
-  newUnitPrice: z.number().min(0).optional(), // Price for new stock
-  newSellingPrice: z.number().min(0).optional(), // Price for new stock
+  originalQuantity: z.number().min(0).optional(),
+  currentQuantity: z.number().min(0).optional(),
+  additionalQuantity: z.number().min(0).optional(),
+  newUnitPrice: z.number().min(0).optional(),
+  newSellingPrice: z.number().min(0).optional(),
   supplier: z.string().min(2).optional(),
 });
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse<ResponseData>> {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
 
   if (!payload || !(payload.role === "admin" || payload.role === "pharmacy")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -34,7 +64,7 @@ export async function PUT(
     const validation = MedicineSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json(validation.error, { status: 400 });
+      return NextResponse.json({ error: validation.error.message }, { status: 400 });
     }
 
     const existingStock = await MedicineStock.findById(params.id);
@@ -45,19 +75,15 @@ export async function PUT(
       );
     }
 
-    const updateData: any = {};
+    const updateData: MedicineUpdateData = {};
 
     // Handle additional stock
-    if (
-      validation.data.additionalQuantity &&
-      validation.data.additionalQuantity > 0
-    ) {
+    if (validation.data.additionalQuantity && validation.data.additionalQuantity > 0) {
       const additionalQty = validation.data.additionalQuantity;
 
-      // If new prices are provided for additional stock
-      if (validation.data.newUnitPrice && validation.data.newSellingPrice) {
-        // Create a new batch for the additional stock with new prices
-        const newBatch = await MedicineStock.create({
+      if (validation.data.newUnitPrice && validation.data.newSellingPrice)
+         {
+        const newBatchData: NewBatchData = {
           name: existingStock.name,
           batchNumber: `${existingStock.batchNumber}-${Date.now()}`,
           expiryDate: validation.data.expiryDate || existingStock.expiryDate,
@@ -66,15 +92,14 @@ export async function PUT(
           unitPrice: validation.data.newUnitPrice,
           sellingPrice: validation.data.newSellingPrice,
           supplier: validation.data.supplier || existingStock.supplier,
-        });
+        };
 
-        // Update existing stock with the remaining fields
-        updateData.currentQuantity =
-          validation.data.currentQuantity ?? existingStock.currentQuantity;
-        if (validation.data.expiryDate)
-          updateData.expiryDate = validation.data.expiryDate;
-        if (validation.data.supplier)
-          updateData.supplier = validation.data.supplier;
+        const newBatch = await MedicineStock.create(newBatchData);
+
+        // Update existing stock
+        updateData.currentQuantity = validation.data.currentQuantity ?? existingStock.currentQuantity;
+        if (validation.data.expiryDate) updateData.expiryDate = validation.data.expiryDate;
+        if (validation.data.supplier) updateData.supplier = validation.data.supplier;
 
         const updatedStock = await MedicineStock.findByIdAndUpdate(
           params.id,
@@ -87,11 +112,8 @@ export async function PUT(
           newBatch,
         });
       } else {
-        // Add to existing batch without price change
-        updateData.originalQuantity =
-          existingStock.originalQuantity + additionalQty;
-        updateData.currentQuantity =
-          existingStock.currentQuantity + additionalQty;
+        updateData.originalQuantity = existingStock.originalQuantity + additionalQty;
+        updateData.currentQuantity = existingStock.currentQuantity + additionalQty;
       }
     }
 
@@ -99,10 +121,8 @@ export async function PUT(
     if (validation.data.currentQuantity !== undefined) {
       updateData.currentQuantity = validation.data.currentQuantity;
     }
-    if (validation.data.expiryDate)
-      updateData.expiryDate = validation.data.expiryDate;
-    if (validation.data.supplier)
-      updateData.supplier = validation.data.supplier;
+    if (validation.data.expiryDate) updateData.expiryDate = validation.data.expiryDate;
+    if (validation.data.supplier) updateData.supplier = validation.data.supplier;
 
     const updatedStock = await MedicineStock.findByIdAndUpdate(
       params.id,
@@ -110,10 +130,11 @@ export async function PUT(
       { new: true }
     );
 
-    return NextResponse.json(updatedStock);
-  } catch (error) {
+    return NextResponse.json({ updatedStock });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update medicine stock";
     return NextResponse.json(
-      { error: "Failed to update medicine stock" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -122,9 +143,9 @@ export async function PUT(
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
-) {
+): Promise<NextResponse<ResponseData>> {
   await dbConnect();
-  const payload = await getTokenPayload(req);
+  const payload = await getTokenPayload(req) as TokenPayload | null;
 
   // Only admin can delete
   if (!payload || payload.role !== "admin") {
@@ -142,10 +163,11 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to delete medicine stock";
     return NextResponse.json(
-      { error: "Failed to delete medicine stock" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
-}
+};

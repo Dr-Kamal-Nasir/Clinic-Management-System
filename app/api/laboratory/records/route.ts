@@ -1,10 +1,27 @@
-//app/api/laboratory/Record/route.ts
-
+// app/api/laboratory/Record/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import {LaboratoryRecord} from '@/lib/models/LaboratoryRecord';
+import { LaboratoryRecord } from '@/lib/models/LaboratoryRecord';
 import { getTokenPayload } from '@/lib/auth/jwt';
 import { z } from 'zod';
+
+// Define types
+interface TokenPayload {
+  id: string;
+  role: string;
+}
+
+interface DateRangeQuery {
+  $gte: Date;
+  $lte: Date;
+}
+
+interface RecordQuery {
+  date?: DateRangeQuery;
+  recordedBy?: string;
+}
+
+type RecordData = z.infer<typeof recordSchema>;
 
 const recordSchema = z.object({
   date: z.coerce.date(),
@@ -16,10 +33,13 @@ const recordSchema = z.object({
   amountPaid: z.number().min(0, "Amount paid must be positive"),
 });
 
-type RecordData = z.infer<typeof recordSchema>;
+interface ValidateRequestResult {
+  error?: NextResponse;
+  payload?: TokenPayload;
+}
 
-const validateRequest = async (req: NextRequest) => {
-  const payload = await getTokenPayload(req);
+const validateRequest = async (req: NextRequest): Promise<ValidateRequestResult> => {
+  const payload = await getTokenPayload(req) as TokenPayload | null;
   if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
@@ -37,7 +57,7 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     
-    const query: Record<string, any> = {};
+    const query: RecordQuery = {};
     
     if (startDate && endDate) {
       query.date = {
@@ -51,10 +71,11 @@ export async function GET(req: NextRequest) {
       .populate('recordedBy', 'name');
       
     return NextResponse.json(records);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Failed to fetch records:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch records';
     return NextResponse.json(
-      { error: 'Failed to fetch records' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -85,10 +106,11 @@ export async function POST(req: NextRequest) {
       { message: 'Record created successfully', record: newRecord },
       { status: 201 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error creating record:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to create record';
     return NextResponse.json(
-      { error: err.message || 'Failed to create record' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -127,10 +149,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(
       { message: 'Record updated successfully', record: updatedRecord }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error updating record:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Failed to update record';
     return NextResponse.json(
-      { error: err.message || 'Failed to update record' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -159,10 +182,11 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json(
       { message: 'Record deleted successfully' }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error deleting record:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Server error';
     return NextResponse.json(
-      { error: err.message || 'Server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

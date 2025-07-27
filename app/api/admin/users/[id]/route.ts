@@ -1,87 +1,127 @@
-// app/api/pharmacy/inventory/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { MedicineStock } from '@/lib/models/MedicineStock';
+import { User } from '@/lib/models/User';
 import dbConnect from '@/lib/dbConnect';
-import { getTokenPayload } from '@/lib/auth/jwt';
+import { UserSchema } from '@/lib/schemas/userSchema';
+import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
+import { jwtDecode } from 'jwt-decode';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+interface TokenPayload {
+  role: string;
+  key: string;
+}
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
   
-  if (!payload || !(payload.role === 'admin' || payload.role === 'pharmacy')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const item = await MedicineStock.findById(params.id).lean();
-    if (!item) {
-      return NextResponse.json(
-        { error: 'Item not found' },
-        { status: 404 }
-      );
+    // Verify authentication
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json(item);
+
+    const user = await User.findById(params.id).select('-password -refreshTokens');
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('Error fetching inventory item:', error);
+    console.error('Failed to fetch user:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch inventory item' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
   
-  if (!payload || !(payload.role === 'admin' || payload.role === 'pharmacy')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const body = await req.json();
-    const updatedItem = await MedicineStock.findByIdAndUpdate(
+    // Verify admin role
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const decoded: TokenPayload = jwtDecode(accessToken);
+    if (decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    const body = await request.json();
+    const validation = UserSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.error },
+        { status: 400 }
+      );
+    }
+    
+    const updateData: Partial<typeof body> = { ...body };
+    if (!body.password) {
+      delete updateData.password;
+    } else {
+      updateData.password = await bcrypt.hash(body.password, 10);
+    }
+    
+    const user = await User.findByIdAndUpdate(
       params.id,
-      body,
-      { new: true }
+      updateData,
+      { new: true, select: '-password -refreshTokens' }
     );
-    if (!updatedItem) {
-      return NextResponse.json(
-        { error: 'Item not found' },
-        { status: 404 }
-      );
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    return NextResponse.json(updatedItem);
+    
+    return NextResponse.json(user);
   } catch (error) {
-    console.error('Error updating inventory item:', error);
+    console.error('Failed to update user:', error);
     return NextResponse.json(
-      { error: 'Failed to update inventory item' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   await dbConnect();
-  const payload = await getTokenPayload(req);
   
-  if (!payload || !(payload.role === 'admin' || payload.role === 'pharmacy')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const deletedItem = await MedicineStock.findByIdAndDelete(params.id);
-    if (!deletedItem) {
-      return NextResponse.json(
-        { error: 'Item not found' },
-        { status: 404 }
-      );
+    // Verify admin role
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return NextResponse.json({ message: 'Item deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting inventory item:', error);
+    
+    const decoded: TokenPayload = jwtDecode(accessToken);
+    if (decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    const user = await User.findByIdAndDelete(params.id);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to delete inventory item' },
+      { success: true, message: 'User deleted successfully' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Failed to delete user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

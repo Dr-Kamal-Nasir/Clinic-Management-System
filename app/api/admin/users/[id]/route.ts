@@ -9,13 +9,19 @@ import { jwtDecode } from 'jwt-decode';
 
 interface TokenPayload {
   role: string;
-  [key: string]: any;
+  key: string;
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+export async function PUT(req: NextRequest): Promise<NextResponse> {
   await dbConnect();
   
   try {
+    // Get ID from URL
+    const id = req.url.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
+
     // Verify admin role
     const cookieStore = cookies();
     const accessToken = (await cookieStore).get('accessToken')?.value;
@@ -36,7 +42,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json(validation.error, { status: 400 });
     }
     
-    // Don't update password if not provided
     const updateData: Partial<typeof body> = { ...body };
     if (!body.password) {
       delete updateData.password;
@@ -45,8 +50,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
     
     const user = await User.findByIdAndUpdate(
-      params.id, 
-      updateData, 
+      id,
+      updateData,
       { new: true, select: '-password' }
     );
     
@@ -61,10 +66,16 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
   await dbConnect();
   
   try {
+    // Get ID from URL
+    const id = req.url.split('/').pop();
+    if (!id) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
+
     // Verify admin role
     const cookieStore = cookies();
     const accessToken = (await cookieStore).get('accessToken')?.value;
@@ -78,7 +89,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const user = await User.findByIdAndDelete(params.id);
+    const user = await User.findByIdAndDelete(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

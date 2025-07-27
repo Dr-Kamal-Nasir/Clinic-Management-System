@@ -29,7 +29,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart,
@@ -140,7 +139,6 @@ type MonthlyLabData = {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PharmacyDashboard() {
-  const { user } = useAuthStore();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [labStartDate, setLabStartDate] = useState<Date | undefined>();
   const [labEndDate, setLabEndDate] = useState<Date | undefined>();

@@ -10,7 +10,7 @@ import { jwtDecode } from 'jwt-decode';
 // Define types for JWT payload
 interface JwtPayload {
   role: string;
-  [key: string]: any; // For other possible properties
+  key: string; // For other possible properties
 }
 
 // Type for user data without sensitive information

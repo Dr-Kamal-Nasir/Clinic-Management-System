@@ -24,7 +24,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
 
     // Verify admin role
     const cookieStore = cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
+    const accessToken = (await cookieStore).get('accessToken')?.value;
     
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +78,7 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
 
     // Verify admin role
     const cookieStore = cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
+    const accessToken = (await cookieStore).get('accessToken')?.value;
     
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

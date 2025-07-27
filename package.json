@@ -11,7 +11,6 @@
   "dependencies": {
     "@clerk/nextjs": "^6.25.4",
     "@emotion/react": "^11.14.0",
-    "@emotion/style": "^0.8.0",
     "@hookform/resolvers": "^5.1.1",
     "@mui/icons-material": "^7.2.0",
     "@mui/lab": "^7.0.0-beta.14",
@@ -69,7 +68,6 @@
     "sonner": "^2.0.6",
     "swr": "^2.3.4",
     "tailwind-merge": "^3.3.1",
-    "ts-mongoose": "^0.0.24",
     "twilio": "^5.7.3",
     "universal-cookie": "^8.0.1",
     "zod": "^4.0.8",

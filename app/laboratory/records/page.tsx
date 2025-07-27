@@ -1,3 +1,5 @@
+//app/laboraotry/records/page.tsx
+
 "use client";
 
 import { useState, useCallback, memo, useMemo } from "react";
@@ -25,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -192,7 +193,6 @@ const SummaryCard = memo(({ title, value }: SummaryCardProps) => {
 SummaryCard.displayName = 'SummaryCard';
 
 export default function LaboratoryRecords() {
-  const { user } = useAuthStore();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [patientName, setPatientName] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");

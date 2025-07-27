@@ -2,13 +2,51 @@
 import { Button } from '@/components/ui/button';
 import { Printer, RefreshCw } from 'lucide-react';
 import { generatePharmacyReceipt } from '@/utils/generatePharmacyReceipt';
-import { Prescription } from '@/lib/models/Prescription';
+import { Prescription as ModelPrescription, PrescriptionItem as ModelPrescriptionItem } from '@/lib/models/Prescription';
+import { Types } from 'mongoose';
+import { IMedicineStock } from '@/lib/models/MedicineStock';
+
+interface User {
+  _id: Types.ObjectId;
+  name: string;
+}
+
+interface MedicineInfo {
+  name: string;
+  batchNumber: string;
+}
+
+interface PrescriptionItemForReceipt {
+  medicine: MedicineInfo;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+}
+
+interface PrescriptionForReceipt {
+  patientName: string;
+  patientPhone: string;
+  invoiceNumber: string;
+  items: PrescriptionItemForReceipt[];
+  totalAmount: number;
+  amountPaid: number;
+  paymentMethod: string;
+  createdAt: string;
+  issuedBy?: {
+    name: string;
+  };
+}
 
 interface PrescriptionHistoryProps {
-  prescriptions: Prescription[];
+  prescriptions: ModelPrescription[];
   loading: boolean;
-  user: any;
+  user: User | null;
   onRefresh: () => void;
+}
+
+// Type guard to check if medicine is populated
+function isMedicinePopulated(medicine: Types.ObjectId | IMedicineStock): medicine is IMedicineStock {
+  return (medicine as IMedicineStock).name !== undefined;
 }
 
 export const PrescriptionHistory = ({ 
@@ -17,13 +55,46 @@ export const PrescriptionHistory = ({
   user,
   onRefresh
 }: PrescriptionHistoryProps) => {
-  const handlePrint = (prescription: Prescription) => {
-    generatePharmacyReceipt({
+  const handlePrint = (prescription: ModelPrescription) => {
+    // Transform the prescription data to match the expected format
+    const receiptData: PrescriptionForReceipt = {
       ...prescription,
+      createdAt: prescription.createdAt.toISOString(),
+      items: prescription.items.map(item => {
+        let medicineName = 'Unknown Medicine';
+        let batchNumber = 'N/A';
+
+        if (isMedicinePopulated(item.medicine)) {
+          medicineName = item.medicine.name;
+          batchNumber = item.medicine.batchNumber;
+        }
+
+        return {
+          ...item,
+          medicine: {
+            name: medicineName,
+            batchNumber: batchNumber
+          }
+        };
+      }),
       issuedBy: {
         name: user?.name || 'System'
       }
-    });
+    };
+    generatePharmacyReceipt(receiptData);
+  };
+
+  const getMedicineInfo = (medicine: Types.ObjectId | IMedicineStock): MedicineInfo => {
+    if (isMedicinePopulated(medicine)) {
+      return {
+        name: medicine.name,
+        batchNumber: medicine.batchNumber
+      };
+    }
+    return {
+      name: 'Unknown Medicine',
+      batchNumber: 'N/A'
+    };
   };
 
   return (
@@ -42,7 +113,7 @@ export const PrescriptionHistory = ({
       ) : (
         <div className="space-y-4">
           {prescriptions.map((prescription) => (
-            <div key={(prescription as any)._id} className="border rounded-lg p-4">
+            <div key={prescription._id.toString()} className="border rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-medium">{prescription.patientName}</h3>
@@ -66,18 +137,21 @@ export const PrescriptionHistory = ({
                   <div className="text-right">Total</div>
                 </div>
                 
-                {prescription.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-6 gap-2 text-sm py-2 border-t">
-                    <div className="text-center">{index + 1}</div>
-                    <div>{item.medicine.name}</div>
-                    <div className="text-center">{item.medicine.batchNumber}</div>
-                    <div className="text-right">{item.quantity}</div>
-                    <div className="text-right">${item.unitPrice.toFixed(2)}</div>
-                    <div className="text-right">
-                      ${(item.quantity * item.unitPrice * (1 - item.discount / 100)).toFixed(2)}
+                {prescription.items.map((item: ModelPrescriptionItem, index: number) => {
+                  const medicineInfo = getMedicineInfo(item.medicine);
+                  return (
+                    <div key={index} className="grid grid-cols-6 gap-2 text-sm py-2 border-t">
+                      <div className="text-center">{index + 1}</div>
+                      <div>{medicineInfo.name}</div>
+                      <div className="text-center">{medicineInfo.batchNumber}</div>
+                      <div className="text-right">{item.quantity}</div>
+                      <div className="text-right">${item.unitPrice.toFixed(2)}</div>
+                      <div className="text-right">
+                        ${(item.quantity * item.unitPrice * (1 - item.discount / 100)).toFixed(2)}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               <div className="mt-4 flex justify-end">

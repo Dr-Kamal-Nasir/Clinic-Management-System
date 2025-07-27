@@ -70,7 +70,7 @@ type RecentPrescription = {
   totalAmount: number;
   paymentMethod: string;
   createdAt: string;
-  status: string;
+  status: "completed" | "pending" | "cancelled";
 };
 
 type LowStockItem = {
@@ -705,52 +705,70 @@ export default function PharmacyDashboard() {
                   </CardContent>
                 </Card>
 
-              <Card>
-  <CardHeader>
-    <CardTitle>Recent Transactions</CardTitle>
-  </CardHeader>
-  <CardContent>
-    {labLoading ? (
-      <Skeleton className="h-[300px] w-full" />
-    ) : (
-      <div className="space-y-4">
-        {[...(labRecords || []).slice(0, 5), ...(labExpenses || []).slice(0, 5)]
-          .sort((a, b) => {
-            const getDate = (item: any) => {
-              if ('orderedDate' in item) return new Date(item.orderedDate);
-              if ('date' in item) return new Date(item.date);
-              return new Date(0); // Fallback for invalid dates
-            };
-            return getDate(b).getTime() - getDate(a).getTime();
-          })
-          .slice(0, 5)
-          .map((item) => {
-            const isRecord = 'testType' in item;
-            const date = isRecord ? item.orderedDate : item.date;
-            const description = isRecord ? item.testType : item.description;
-            const amount = isRecord ? item.amountPaid : -item.amount;
-            const doctorName = item.doctorName || 'N/A';
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Transactions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {labLoading ? (
+                      <Skeleton className="h-[300px] w-full" />
+                    ) : (
+                      <div className="space-y-4">
+                        {[
+                          ...(labRecords || []).slice(0, 5),
+                          ...(labExpenses || []).slice(0, 5),
+                        ]
+                          .sort((a, b) => {
+                            const getDate = (item: any) => {
+                              if ("orderedDate" in item)
+                                return new Date(item.orderedDate);
+                              if ("date" in item) return new Date(item.date);
+                              return new Date(0); // Fallback for invalid dates
+                            };
+                            return getDate(b).getTime() - getDate(a).getTime();
+                          })
+                          .slice(0, 5)
+                          .map((item) => {
+                            const isRecord = "testType" in item;
+                            const date = isRecord
+                              ? item.orderedDate
+                              : item.date;
+                            const description = isRecord
+                              ? item.testType
+                              : item.description;
+                            const amount = isRecord
+                              ? item.amountPaid
+                              : -item.amount;
+                            const doctorName = item.doctorName || "N/A";
 
-            return (
-              <div key={item._id} className="flex justify-between items-center p-2 border rounded">
-                <div>
-                  <p className="font-medium">{description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {safeFormat(new Date(date), 'PP')} • {doctorName}
-                  </p>
-                </div>
-                <div className={`font-bold ${
-                  isRecord ? 'text-green-500' : 'text-red-500'
-                }`}>
-                  {isRecord ? `+$${amount.toFixed(2)}` : `-$${Math.abs(amount).toFixed(2)}`}
-                </div>
-              </div>
-            );
-          })}
-      </div>
-    )}
-  </CardContent>
-</Card>
+                            return (
+                              <div
+                                key={item._id}
+                                className="flex justify-between items-center p-2 border rounded"
+                              >
+                                <div>
+                                  <p className="font-medium">{description}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {safeFormat(new Date(date), "PP")} •{" "}
+                                    {doctorName}
+                                  </p>
+                                </div>
+                                <div
+                                  className={`font-bold ${
+                                    isRecord ? "text-green-500" : "text-red-500"
+                                  }`}
+                                >
+                                  {isRecord
+                                    ? `+$${amount.toFixed(2)}`
+                                    : `-$${Math.abs(amount).toFixed(2)}`}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>

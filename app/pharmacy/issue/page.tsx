@@ -64,12 +64,10 @@ interface Prescription {
 interface User {
   id: string;
   name: string;
-  // Add other user properties as needed
 }
 
 interface AuthStore {
   user: User | null;
-  // Add other auth store properties as needed
 }
 
 interface JSPDFWithAutoTable extends jsPDF {
@@ -78,7 +76,19 @@ interface JSPDFWithAutoTable extends jsPDF {
   };
 }
 
-const fetcher = (url: string): Promise<{ data: any[] }> => fetch(url).then(res => res.json());
+interface ApiResponse<T> {
+  data: T;
+  error?: string;
+  message?: string;
+}
+
+const fetcher = async <T,>(url: string): Promise<ApiResponse<T>> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to fetch data');
+  }
+  return response.json();
+};
 
 export default function PharmacyPage() {
   const { user } = useAuthStore() as AuthStore;
@@ -91,15 +101,15 @@ export default function PharmacyPage() {
   const [invoiceNumber, setInvoiceNumber] = useState<string>(`INV-${Date.now()}`);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
-  const { data: medicines, isLoading: isLoadingStock, mutate: mutateStock } = useSWR<{ data: Medicine[] }>('/api/pharmacy/stock', fetcher);
-  const { data: prescriptionsData, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR<{ data: Prescription[] }>('/api/pharmacy/prescriptions', fetcher);
+  const { data: medicinesResponse, isLoading: isLoadingStock, mutate: mutateStock } = useSWR<ApiResponse<Medicine[]>>('/api/pharmacy/stock', fetcher);
+  const { data: prescriptionsResponse, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR<ApiResponse<Prescription[]>>('/api/pharmacy/prescriptions', fetcher);
   
-  const medicinesData = medicines?.data || [];
-  const prescriptions = prescriptionsData?.data || [];
+  const medicinesData = medicinesResponse?.data || [];
+  const prescriptions = prescriptionsResponse?.data || [];
 
   const filteredMedicines = medicinesData
-    .filter((m: Medicine) => m.currentQuantity > 0)
-    .filter((m: Medicine) => 
+    .filter((m) => m.currentQuantity > 0)
+    .filter((m) => 
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.batchNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -111,7 +121,7 @@ export default function PharmacyPage() {
   const addItem = () => {
     if (!selectedMedicine) return;
     
-    const medicine = medicinesData.find((m: Medicine) => m._id === selectedMedicine);
+    const medicine = medicinesData.find((m) => m._id === selectedMedicine);
     if (!medicine) return;
     
     const existingItem = items.find(item => item.medicine === selectedMedicine);
@@ -168,7 +178,6 @@ export default function PharmacyPage() {
     const doc = new jsPDF() as JSPDFWithAutoTable;
     const date = new Date(prescription.createdAt).toLocaleDateString();
     
-    // Header
     doc.setFontSize(18);
     doc.text('MEDICAL PRESCRIPTION', 105, 20, { align: 'center' });
     
@@ -176,21 +185,18 @@ export default function PharmacyPage() {
     doc.text(`Invoice #: ${prescription.invoiceNumber}`, 14, 30);
     doc.text(`Date: ${date}`, 14, 38);
     
-    // Clinic Info (replace with your clinic details)
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text('Your Clinic Name', 105, 30, { align: 'center' });
     doc.text('123 Medical Street, City', 105, 35, { align: 'center' });
     doc.text('Phone: (123) 456-7890', 105, 40, { align: 'center' });
     
-    // Patient Info
     doc.setFontSize(12);
     doc.setTextColor(0);
     doc.text('Patient Information:', 14, 50);
     doc.text(`Name: ${prescription.patientName}`, 20, 58);
     doc.text(`Phone: ${prescription.patientPhone}`, 20, 66);
     
-    // Prescription Items
     doc.setFontSize(12);
     doc.text('Prescribed Items:', 14, 80);
     
@@ -217,7 +223,6 @@ export default function PharmacyPage() {
       }
     });
     
-    // Summary
     const finalY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : 100;
     doc.setFontSize(12);
     doc.text('Payment Summary:', 14, finalY);
@@ -237,7 +242,6 @@ export default function PharmacyPage() {
       }
     });
     
-    // Footer
     const lastY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : 120;
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -245,7 +249,6 @@ export default function PharmacyPage() {
     doc.text(prescription.issuedBy?.name || 'System', 14, lastY + 5);
     doc.text('Thank you for your visit!', 105, lastY + 10, { align: 'center' });
     
-    // Save the PDF
     doc.save(`prescription-${prescription.invoiceNumber}.pdf`);
   };
 
@@ -297,7 +300,7 @@ export default function PharmacyPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Tabs value={activeTab} onValueChange={setActiveTab as (value: string)=> void} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'issue' | 'history')} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="issue">Issue Medicine</TabsTrigger>
           <TabsTrigger value="history">Prescription History</TabsTrigger>
@@ -356,7 +359,7 @@ export default function PharmacyPage() {
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-auto">
                       {filteredMedicines.length > 0 ? (
-                        filteredMedicines.map((medicine: Medicine) => (
+                        filteredMedicines.map((medicine) => (
                           <SelectItem key={medicine._id} value={medicine._id}>
                             <div className="flex flex-col">
                               <span>{medicine.name}</span>
@@ -454,7 +457,7 @@ export default function PharmacyPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div>
                   <Label>Payment Method</Label>
                   <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -465,25 +468,22 @@ export default function PharmacyPage() {
                       <SelectItem value="cash">Cash</SelectItem>
                       <SelectItem value="card">Card</SelectItem>
                       <SelectItem value="insurance">Insurance</SelectItem>
+                      <SelectItem value="mobile">Mobile Payment</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <div className="flex justify-end items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-sm text-muted-foreground">Total Amount</div>
-                      <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
-                    </div>
-                    <Button 
-                      size="lg" 
-                      onClick={handleSubmit}
-                      disabled={items.length === 0}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Complete Prescription
-                    </Button>
+                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                    <span className="font-medium">Total Amount:</span>
+                    <span className="text-xl font-bold">${calculateTotal().toFixed(2)}</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSubmit} disabled={items.length === 0}>
+                  <CheckCircle className="mr-2 h-4 w-4" /> Issue Prescription
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -495,66 +495,60 @@ export default function PharmacyPage() {
               <CardTitle>Prescription History</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoadingPrescriptions ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search prescriptions..."
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 p-2 bg-gray-100 font-medium">
+                  <div className="col-span-2">Invoice #</div>
+                  <div className="col-span-3">Patient</div>
+                  <div className="col-span-2">Date</div>
+                  <div className="col-span-2">Amount</div>
+                  <div className="col-span-2">Payment</div>
+                  <div className="col-span-1">Actions</div>
                 </div>
-              ) : prescriptions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No prescriptions found
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {prescriptions.map((prescription) => (
-                    <div key={prescription._id} className="border rounded-lg p-4">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-                        <div>
-                          <h3 className="font-medium">Invoice #{prescription.invoiceNumber}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(prescription.createdAt).toLocaleDateString()} • {prescription.patientName} ({prescription.patientPhone})
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {prescription.paymentMethod}
-                          </Badge>
-                          <Badge variant={prescription.status === 'completed' ? 'default' : 'secondary'}>
-                            {prescription.status}
-                          </Badge>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => generatePrescriptionPDF(prescription)}
-                          >
-                            <DownloadIcon className="mr-2 h-4 w-4" />
-                            Download
-                          </Button>
-                        </div>
+                
+                {prescriptions.length > 0 ? (
+                  prescriptions.map((prescription) => (
+                    <div key={prescription._id} className="grid grid-cols-12 gap-2 p-2 border-t">
+                      <div className="col-span-2">{prescription.invoiceNumber}</div>
+                      <div className="col-span-3">
+                        <div>{prescription.patientName}</div>
+                        <div className="text-xs text-muted-foreground">{prescription.patientPhone}</div>
                       </div>
-                      <div className="border-t pt-2">
-                        <div className="grid grid-cols-12 gap-2 font-medium mb-1">
-                          <div className="col-span-6">Medicine</div>
-                          <div className="col-span-2 text-right">Qty</div>
-                          <div className="col-span-2 text-right">Price</div>
-                          <div className="col-span-2 text-right">Total</div>
-                        </div>
-                        {prescription.items.map((item, index) => (
-                          <div key={index} className="grid grid-cols-12 gap-2 text-sm">
-                            <div className="col-span-6">{item.medicine?.name || 'Unknown'}</div>
-                            <div className="col-span-2 text-right">{item.quantity}</div>
-                            <div className="col-span-2 text-right">${item.unitPrice?.toFixed(2)}</div>
-                            <div className="col-span-2 text-right">${item.total?.toFixed(2)}</div>
-                          </div>
-                        ))}
-                        <div className="grid grid-cols-12 gap-2 border-t mt-2 pt-2 font-medium">
-                          <div className="col-span-10 text-right">Total Amount:</div>
-                          <div className="col-span-2 text-right">${prescription.totalAmount?.toFixed(2)}</div>
-                        </div>
+                      <div className="col-span-2">
+                        {new Date(prescription.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="col-span-2">
+                        ${prescription.totalAmount?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="col-span-2">
+                        <Badge variant="outline" className="capitalize">
+                          {prescription.paymentMethod}
+                        </Badge>
+                      </div>
+                      <div className="col-span-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => generatePrescriptionPDF(prescription)}
+                        >
+                          <DownloadIcon className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {isLoadingPrescriptions ? 'Loading prescriptions...' : 'No prescriptions found'}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

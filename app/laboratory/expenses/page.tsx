@@ -1,3 +1,5 @@
+//app/laboratory/expenses/page.tsx
+
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
@@ -52,20 +54,20 @@ export default function LaboratoryExpenses() {
   const { user } = useAuthStore();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState<number>(0);
   const [expenseType, setExpenseType] = useState<'normal' | 'doctor_salary'>('normal');
   const [doctorName, setDoctorName] = useState("");
   const [fromDate, setFromDate] = useState<Date | undefined>();
   const [toDate, setToDate] = useState<Date | undefined>();
   const [percentage, setPercentage] = useState<number>(100);
   const [calculatedAmount, setCalculatedAmount] = useState<number>(0);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [filterStartDate, setFilterStartDate] = useState<Date | undefined>();
   const [filterEndDate, setFilterEndDate] = useState<Date | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const { data: expenses, isLoading } = useSWR<Expense[]>(
     `/api/laboratory/expenses?${new URLSearchParams({
@@ -75,7 +77,7 @@ export default function LaboratoryExpenses() {
     fetcher
   );
 
-  const filteredExpenses = useMemo(() => {
+  const filteredExpenses = useMemo<Expense[]>(() => {
     if (!expenses) return [];
     
     const searchTermLower = searchTerm.toLowerCase();
@@ -89,12 +91,12 @@ export default function LaboratoryExpenses() {
     });
   }, [expenses, searchTerm]);
 
-  const totalExpenses = useMemo(() => 
-    filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0), 
+  const totalExpenses = useMemo<number>(() => 
+    filteredExpenses.reduce((sum: number, expense: Expense) => sum + expense.amount, 0), 
     [filteredExpenses]
   );
 
-  const calculateDoctorSalary = useCallback(async () => {
+  const calculateDoctorSalary = useCallback(async (): Promise<void> => {
     if (!fromDate || !toDate) return;
     
     try {
@@ -106,17 +108,17 @@ export default function LaboratoryExpenses() {
       if (!response.ok) throw new Error('Failed to fetch records');
       
       const records: Record[] = await response.json();
-      const total = records.reduce((sum, record) => sum + record.amountPaid, 0);
+      const total = records.reduce((sum: number, record: Record) => sum + record.amountPaid, 0);
       setCalculatedAmount(total);
       setAmount(total * (percentage / 100));
       toast.success(`Calculated $${total.toFixed(2)} from records`);
-    } catch (error) {
-      toast.error('Failed to calculate salary');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to calculate salary');
       console.error(error);
     }
   }, [fromDate, toDate, percentage]);
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setDate(new Date());
     setDescription("");
     setAmount(0);
@@ -129,7 +131,7 @@ export default function LaboratoryExpenses() {
     setCurrentExpense(null);
   };
 
-  const handleEditClick = (expense: Expense) => {
+  const handleEditClick = (expense: Expense): void => {
     setCurrentExpense(expense);
     setDate(new Date(expense.date));
     setDescription(expense.description);
@@ -143,7 +145,7 @@ export default function LaboratoryExpenses() {
     setDialogOpen(true);
   };
 
-  const handleDeleteClick = async (id: string) => {
+  const handleDeleteClick = async (id: string): Promise<void> => {
     if (!confirm("Are you sure you want to delete this expense?")) return;
     
     setIsDeleting(true);
@@ -165,7 +167,7 @@ export default function LaboratoryExpenses() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!date || !description || amount <= 0) {
       toast.error("Please fill all required fields");
       return;
@@ -341,7 +343,7 @@ export default function LaboratoryExpenses() {
                 </TableCell>
               </TableRow>
             ) : filteredExpenses.length ? (
-              filteredExpenses.map((expense: any) => (
+              filteredExpenses.map((expense: Expense) => (
                 <TableRow key={expense._id}>
                   <TableCell>{format(new Date(expense.date), 'PP')}</TableCell>
                   <TableCell>{expense.description}</TableCell>
@@ -389,7 +391,7 @@ export default function LaboratoryExpenses() {
         </Table>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
+      <Dialog open={dialogOpen} onOpenChange={(open: boolean) => {
         if (!open) {
           resetForm();
         }
@@ -422,19 +424,11 @@ export default function LaboratoryExpenses() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Expense Type*</Label>
-              <Select 
-                value={expenseType} 
-                onValueChange={(value: 'normal' | 'doctor_salary') => {
-                  setExpenseType(value);
-                  if (value === 'normal') {
-                    setCalculatedAmount(0);
-                    setDoctorName("");
-                    setFromDate(undefined);
-                    setToDate(undefined);
-                  }
-                }}
+              <Select
+                value={expenseType}
+                onValueChange={(value: 'normal' | 'doctor_salary') => setExpenseType(value)}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Select expense type" />
                 </SelectTrigger>
                 <SelectContent>

@@ -6,8 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PDFGenerator from '@/components/pharmacy/PDFGenerator';
 
-export default function MedicineStockReport({ data }: { data: any[] }) {
-  const [reportType, setReportType] = useState('all');
+interface MedicineStock {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  expiryDate: string;
+  quantity: number;
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+  expiryStatus: 'valid' | 'expiring-soon' | 'expired';
+}
+
+type ReportType = 'all' | 'expiring' | 'expired' | 'low';
+
+interface MedicineStockReportProps {
+  data: MedicineStock[];
+}
+
+export default function MedicineStockReport({ data }: MedicineStockReportProps) {
+  const [reportType, setReportType] = useState<ReportType>('all');
   
   // Filter data based on report type
   const filteredData = data.filter(item => {
@@ -17,7 +35,7 @@ export default function MedicineStockReport({ data }: { data: any[] }) {
     return true;
   });
 
-  const getReportTitle = () => {
+  const getReportTitle = (): string => {
     switch (reportType) {
       case 'expiring': return 'Expiring Soon Medicines';
       case 'expired': return 'Expired Medicines';

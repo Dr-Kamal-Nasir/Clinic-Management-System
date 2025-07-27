@@ -9,34 +9,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { MedicineStockForm } from '@/components/pharmacy/MedicineInventoryForm';
-
-
-interface MedicineStock {
-  _id: string;
-  name: string;
-  batchNumber: string;
-  expiryDate: string;
-  currentQuantity: number;
-  originalQuantity: number;
-  unitPrice: number;
-  sellingPrice: number;
-  supplier: string;
-  description?: string;
-  remainingPercentage: number;
-  expiryStatus: 'valid' | 'expiring-soon' | 'expired';
-}
+import { MedicineStockForm } from './MedicineInventoryForm';
+import { Medicine, MedicineStock } from '@/types/medicine';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export default function InventoryManagementPage() 
-{
+export default function InventoryManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [editItem, setEditItem] = useState<MedicineStock | null>(null);
+  const [editItem, setEditItem] = useState<Medicine | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: inventory, isLoading, error } = useSWR<MedicineStock[]>('/api/pharmacy/inventory', fetcher);
@@ -50,16 +33,13 @@ export default function InventoryManagementPage()
     const doc = new jsPDF();
     const date = new Date().toLocaleDateString();
     
-    // Title
     doc.setFontSize(18);
     doc.setTextColor(40);
     doc.text('Pharmacy Inventory Report', 105, 20, { align: 'center' });
     
-    // Subtitle
     doc.setFontSize(12);
     doc.text(`Generated on: ${date}`, 105, 30, { align: 'center' });
     
-    // Inventory Table
     autoTable(doc, {
       startY: 40,
       head: [['Medicine', 'Batch', 'Expiry', 'Stock', 'Unit Price', 'Selling Price', 'Supplier']],
@@ -77,7 +57,6 @@ export default function InventoryManagementPage()
       alternateRowStyles: { fillColor: [241, 245, 249] }
     });
 
-    // Summary
     const totalItems = filteredInventory.length;
     const totalValue = filteredInventory.reduce((sum, item) => sum + (item.currentQuantity * item.unitPrice), 0);
     const lowStockItems = filteredInventory.filter(item => item.remainingPercentage < 20).length;
@@ -252,13 +231,13 @@ export default function InventoryManagementPage()
         </CardFooter>
       </Card>
 
-      {/* Medicine Form Dialog */}
       <MedicineStockForm 
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         initialData={editItem}
         onSuccess={() => {
           mutate('/api/pharmacy/inventory');
+          setEditItem(null);
           setIsFormOpen(false);
         }}
       />

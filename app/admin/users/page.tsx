@@ -42,7 +42,7 @@ export default function AdminUsersPage() {
                 {selectedUser ? "Edit User" : "Create New User"}
               </DialogTitle>
             </DialogHeader>
-            <UserForm user={selectedUser} onSuccess={handleRefresh} />
+            <UserForm user={selectedUser ? { ...selectedUser, _id: selectedUser._id.toString() } : null} onSuccess={handleRefresh} />
           </DialogContent>
         </Dialog>
       </div>

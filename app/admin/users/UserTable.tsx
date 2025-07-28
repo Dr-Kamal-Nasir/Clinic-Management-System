@@ -65,5 +65,5 @@ export default function UserTable({
     },
   ];
 
-  return <DataTable columns={columns} data={users} />;
+  return <DataTable columns={columns} data={users} searchKey="name" />;
 }

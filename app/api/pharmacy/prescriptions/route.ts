@@ -75,15 +75,15 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      if (medicine.quantity < item.quantity) {
+      if (medicine.currentQuantity < item.quantity) {
         return NextResponse.json(
-          { error: `Insufficient stock for ${medicine.name}` }, 
+          { error: `Insufficient stock for ${medicine.name}` },
           { status: 400 }
         );
       }
       
       // Update stock quantity
-      medicine.quantity -= item.quantity;
+      medicine.currentQuantity -= item.quantity;
       await medicine.save();
     }
 

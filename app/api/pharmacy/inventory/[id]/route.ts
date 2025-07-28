@@ -4,7 +4,7 @@ import { MedicineStock } from '@/lib/models/MedicineStock';
 import dbConnect from '@/lib/dbConnect';
 import { getTokenPayload } from '@/lib/auth/jwt';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const payload = await getTokenPayload(req);
   
@@ -13,7 +13,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
-    const item = await MedicineStock.findById(params.id).lean();
+    const { id } = await params;
+    const item = await MedicineStock.findById(id).lean();
     if (!item) {
       return NextResponse.json(
         { error: 'Item not found' },
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const payload = await getTokenPayload(req);
   
@@ -39,9 +40,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 
   try {
+    const { id } = await params;
     const body = await req.json();
     const updatedItem = await MedicineStock.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true }
     );
@@ -61,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const payload = await getTokenPayload(req);
   
@@ -70,7 +72,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   try {
-    const deletedItem = await MedicineStock.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const deletedItem = await MedicineStock.findByIdAndDelete(id);
     if (!deletedItem) {
       return NextResponse.json(
         { error: 'Item not found' },

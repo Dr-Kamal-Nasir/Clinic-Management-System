@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
     });
     
     // Exclude password and refresh tokens
-    const { password, refreshTokens, ...userWithoutSensitive }: SafeUserData = newUser.toObject();
+    const userObject = newUser.toObject();
+    const { password, refreshTokens, ...userWithoutSensitive } = userObject;
     return NextResponse.json(userWithoutSensitive, { status: 201 });
   } catch (error: unknown) {
     console.error('Failed to create user:', error);

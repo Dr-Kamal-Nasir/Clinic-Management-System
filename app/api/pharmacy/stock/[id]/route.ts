@@ -50,7 +50,7 @@ const MedicineSchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ResponseData>> {
   await dbConnect();
   const payload = await getTokenPayload(req) as TokenPayload | null;
@@ -60,6 +60,7 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params;
     const body = await req.json();
     const validation = MedicineSchema.safeParse(body);
 
@@ -67,7 +68,7 @@ export async function PUT(
       return NextResponse.json({ error: validation.error.message }, { status: 400 });
     }
 
-    const existingStock = await MedicineStock.findById(params.id);
+    const existingStock = await MedicineStock.findById(id);
     if (!existingStock) {
       return NextResponse.json(
         { error: "Medicine not found" },
@@ -81,8 +82,7 @@ export async function PUT(
     if (validation.data.additionalQuantity && validation.data.additionalQuantity > 0) {
       const additionalQty = validation.data.additionalQuantity;
 
-      if (validation.data.newUnitPrice && validation.data.newSellingPrice)
-         {
+      if (validation.data.newUnitPrice && validation.data.newSellingPrice) {
         const newBatchData: NewBatchData = {
           name: existingStock.name,
           batchNumber: `${existingStock.batchNumber}-${Date.now()}`,
@@ -102,7 +102,7 @@ export async function PUT(
         if (validation.data.supplier) updateData.supplier = validation.data.supplier;
 
         const updatedStock = await MedicineStock.findByIdAndUpdate(
-          params.id,
+          id,
           updateData,
           { new: true }
         );
@@ -125,7 +125,7 @@ export async function PUT(
     if (validation.data.supplier) updateData.supplier = validation.data.supplier;
 
     const updatedStock = await MedicineStock.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true }
     );
@@ -142,7 +142,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse<ResponseData>> {
   await dbConnect();
   const payload = await getTokenPayload(req) as TokenPayload | null;
@@ -153,7 +153,8 @@ export async function DELETE(
   }
 
   try {
-    const deletedStock = await MedicineStock.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const deletedStock = await MedicineStock.findByIdAndDelete(id);
 
     if (!deletedStock) {
       return NextResponse.json(

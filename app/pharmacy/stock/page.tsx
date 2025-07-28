@@ -34,6 +34,7 @@ interface MedicineStock {
   expiryDate: string;
   supplier: string;
   sellingPrice: number;
+  unitPrice: number;
 }
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -121,9 +122,12 @@ export default function PharmacyStockPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[800px]">
-                <MedicineStockForm 
-                  initialData={selectedStock} 
-                  onSuccess={handleFormSuccess} 
+                <MedicineStockForm
+                  initialData={selectedStock ? {
+                    ...selectedStock,
+                    expiryDate: new Date(selectedStock.expiryDate)
+                  } : undefined}
+                  onSuccess={handleFormSuccess}
                 />
               </DialogContent>
             </Dialog>

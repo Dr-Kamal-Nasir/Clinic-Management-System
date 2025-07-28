@@ -12,47 +12,108 @@ interface TokenPayload {
   key: string;
 }
 
-export async function PUT(req: NextRequest): Promise<NextResponse> {
+// Updated type definitions
+type RouteParams = { id: string };
+type RouteContext = { params: RouteParams };
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<RouteParams> }
+): Promise<NextResponse> {
   await dbConnect();
-  
+  const { id } = await params;
+
   try {
-    // Get ID from URL
-    const id = req.url.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    // Verify authentication
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin role
-    const cookieStore = cookies();
-    const accessToken = (await cookieStore).get('accessToken')?.value;
+    // Verify token is valid
+    try {
+      jwtDecode(accessToken);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const user = await User.findById(id).select('-password -refreshTokens');
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<RouteParams> }
+): Promise<NextResponse> {
+  await dbConnect();
+  const { id } = await params;
+
+  try {
+    // Get cookies synchronously
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
     
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: TokenPayload = jwtDecode(accessToken);
+    // Verify token with error handling
+    let decoded: TokenPayload;
+    try {
+      decoded = jwtDecode(accessToken);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const body = await req.json();
+    // Parse and validate request body
+    const body = await request.json();
     const validation = UserSchema.safeParse(body);
     
     if (!validation.success) {
-      return NextResponse.json(validation.error, { status: 400 });
+      return NextResponse.json(
+        { 
+          error: 'Validation failed', 
+          details: validation.error.flatten() 
+        },
+        { status: 400 }
+      );
     }
     
-    const updateData: Partial<typeof body> = { ...body };
-    if (!body.password) {
-      delete updateData.password;
+    // Prepare update data
+    const updateData: Partial<typeof body> = { ...validation.data };
+    
+    // Handle password hashing if present
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
     } else {
-      updateData.password = await bcrypt.hash(body.password, 10);
+      delete updateData.password;
     }
     
+    // Update user in database
     const user = await User.findByIdAndUpdate(
       id,
       updateData,
-      { new: true, select: '-password' }
+      { 
+        new: true, 
+        select: '-password -refreshTokens' 
+      }
     );
     
     if (!user) {
@@ -62,29 +123,38 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(user);
   } catch (error) {
     console.error('Failed to update user:', error);
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: NextRequest): Promise<NextResponse> {
+
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<RouteParams> }
+): Promise<NextResponse> {
   await dbConnect();
+  const { id } = await params;
   
   try {
-    // Get ID from URL
-    const id = req.url.split('/').pop();
-    if (!id) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-    }
-
     // Verify admin role
-    const cookieStore = cookies();
-    const accessToken = (await cookieStore).get('accessToken')?.value;
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
     
     if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const decoded: TokenPayload = jwtDecode(accessToken);
+    let decoded: TokenPayload;
+    try {
+      decoded = jwtDecode(accessToken);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -94,9 +164,15 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true, message: 'User deleted successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Failed to delete user:', error);
-    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

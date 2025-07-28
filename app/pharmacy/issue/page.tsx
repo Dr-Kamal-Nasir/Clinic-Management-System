@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { PlusCircle, MinusCircle, Trash2, CheckCircle, Search, DownloadIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,9 +80,30 @@ interface ApiResponse<T> {
   data: T;
   error?: string;
   message?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
-const fetcher = async <T,>(url: string): Promise<ApiResponse<T>> => {
+interface StockApiResponse {
+  data: Medicine[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface PrescriptionApiResponse {
+  success: boolean;
+  data: Prescription[];
+}
+
+const fetcher = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch data');
@@ -101,78 +122,177 @@ export default function PharmacyPage() {
   const [invoiceNumber, setInvoiceNumber] = useState<string>(`INV-${Date.now()}`);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
-  const { data: medicinesResponse, isLoading: isLoadingStock, mutate: mutateStock } = useSWR<ApiResponse<Medicine[]>>('/api/pharmacy/stock', fetcher);
-  const { data: prescriptionsResponse, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR<ApiResponse<Prescription[]>>('/api/pharmacy/prescriptions', fetcher);
+  const { data: medicinesResponse, isLoading: isLoadingStock, mutate: mutateStock } = useSWR('/api/pharmacy/stock', fetcher);
+  const { data: prescriptionsResponse, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR('/api/pharmacy/prescriptions', fetcher);
   
-  const medicinesData = medicinesResponse?.data || [];
-  const prescriptions = prescriptionsResponse?.data || [];
+  const medicinesData = useMemo(() => {
+    if (!medicinesResponse) return [];
+    // Stock API returns { data: [], pagination: {} }
+    if (medicinesResponse.data && Array.isArray(medicinesResponse.data)) {
+      return medicinesResponse.data;
+    }
+    // Fallback: if medicinesResponse is directly an array
+    if (Array.isArray(medicinesResponse)) {
+      return medicinesResponse;
+    }
+    return [];
+  }, [medicinesResponse]);
+  
+  const prescriptions = useMemo(() => {
+    if (!prescriptionsResponse) return [];
+    // Prescriptions API returns { success: true, data: [] }
+    if (prescriptionsResponse.success && prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
+      return prescriptionsResponse.data;
+    }
+    // Fallback: if prescriptionsResponse.data is directly an array
+    if (prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
+      return prescriptionsResponse.data;
+    }
+    // Fallback: if prescriptionsResponse is directly an array
+    if (Array.isArray(prescriptionsResponse)) {
+      return prescriptionsResponse;
+    }
+    return [];
+  }, [prescriptionsResponse]);
 
-  const filteredMedicines = medicinesData
-    .filter((m) => m.currentQuantity > 0)
-    .filter((m) => 
-      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.batchNumber.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const filteredMedicines = useMemo(() => {
+    if (!Array.isArray(medicinesData) || medicinesData.length === 0) {
+      return [];
+    }
+    
+    return medicinesData
+      .filter((medicine) => {
+        if (!medicine ||
+            typeof medicine.currentQuantity !== 'number' ||
+            !medicine._id ||
+            !medicine.name ||
+            !medicine.batchNumber ||
+            typeof medicine.sellingPrice !== 'number') {
+          return false;
+        }
+        return medicine.currentQuantity > 0;
+      })
+      .filter((medicine) => {
+        if (!searchTerm || !searchTerm.trim()) {
+          return true;
+        }
+        
+        const searchLower = searchTerm.toLowerCase();
+        const name = medicine.name?.toLowerCase() || '';
+        const batchNumber = medicine.batchNumber?.toLowerCase() || '';
+        
+        return name.includes(searchLower) || batchNumber.includes(searchLower);
+      });
+  }, [medicinesData, searchTerm]);
 
   useEffect(() => {
     setInvoiceNumber(`INV-${Date.now()}`);
   }, [items]);
 
   const addItem = () => {
-    if (!selectedMedicine) return;
-    
-    const medicine = medicinesData.find((m) => m._id === selectedMedicine);
-    if (!medicine) return;
-    
-    const existingItem = items.find(item => item.medicine === selectedMedicine);
-    if (existingItem) {
-      setItems(items.map(item => 
-        item.medicine === selectedMedicine 
-          ? { ...item, quantity: item.quantity + 1 } 
-          : item
-      ));
-    } else {
-      setItems([
-        ...items,
-        {
-          medicine: selectedMedicine,
-          name: medicine.name,
-          batchNumber: medicine.batchNumber,
-          quantity: 1,
-          unitPrice: medicine.sellingPrice,
-          discount: 0,
-          total: medicine.sellingPrice
-        }
-      ]);
+    try {
+      if (!selectedMedicine || !Array.isArray(medicinesData) || medicinesData.length === 0) {
+        return;
+      }
+      
+      const medicine = medicinesData.find((m) => m && m._id === selectedMedicine);
+      if (!medicine || !medicine.name || !medicine.batchNumber || typeof medicine.sellingPrice !== 'number') {
+        toast.error('Invalid medicine selected');
+        return;
+      }
+      
+      const currentItems = Array.isArray(items) ? items : [];
+      const existingItem = currentItems.find(item => item && item.medicine === selectedMedicine);
+      
+      if (existingItem) {
+        setItems(currentItems.map(item =>
+          item && item.medicine === selectedMedicine
+            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unitPrice * (1 - item.discount / 100) }
+            : item
+        ));
+      } else {
+        setItems([
+          ...currentItems,
+          {
+            medicine: selectedMedicine,
+            name: medicine.name,
+            batchNumber: medicine.batchNumber,
+            quantity: 1,
+            unitPrice: medicine.sellingPrice,
+            discount: 0,
+            total: medicine.sellingPrice
+          }
+        ]);
+      }
+      
+      setSelectedMedicine('');
+      setSearchTerm('');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('Failed to add medicine');
     }
-    
-    setSelectedMedicine('');
-    setSearchTerm('');
   };
 
   const updateItem = (medicineId: string, field: keyof MedicineItem, value: number) => {
-    setItems(items.map(item => {
-      if (item.medicine === medicineId) {
-        const updatedItem = { ...item, [field]: value };
+    try {
+      if (!Array.isArray(items) || !medicineId || typeof value !== 'number' || isNaN(value)) {
+        return;
+      }
+      
+      setItems(items.map(item => {
+        if (!item || item.medicine !== medicineId) {
+          return item;
+        }
+        
+        const updatedItem = { ...item, [field]: Math.max(0, value) };
         
         if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
-          const discountedPrice = updatedItem.unitPrice * (1 - updatedItem.discount / 100);
-          updatedItem.total = updatedItem.quantity * discountedPrice;
+          const quantity = updatedItem.quantity || 0;
+          const unitPrice = updatedItem.unitPrice || 0;
+          const discount = Math.min(100, Math.max(0, updatedItem.discount || 0));
+          
+          updatedItem.discount = discount;
+          const discountedPrice = unitPrice * (1 - discount / 100);
+          updatedItem.total = quantity * discountedPrice;
         }
         
         return updatedItem;
-      }
-      return item;
-    }));
+      }));
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Failed to update item');
+    }
   };
 
   const removeItem = (medicineId: string) => {
-    setItems(items.filter(item => item.medicine !== medicineId));
+    try {
+      if (!Array.isArray(items) || !medicineId) {
+        return;
+      }
+      setItems(items.filter(item => item && item.medicine !== medicineId));
+    } catch (error) {
+      console.error('Error removing item:', error);
+      toast.error('Failed to remove item');
+    }
   };
 
-  const calculateTotal = (): number => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  };
+  const calculateTotal = useMemo((): number => {
+    try {
+      if (!Array.isArray(items) || items.length === 0) {
+        return 0;
+      }
+      
+      return items.reduce((sum, item) => {
+        if (!item || typeof item.total !== 'number' || isNaN(item.total) || item.total < 0) {
+          return sum;
+        }
+        return sum + item.total;
+      }, 0);
+    } catch (error) {
+      console.error('Error calculating total:', error);
+      return 0;
+    }
+  }, [items]);
 
   const generatePrescriptionPDF = (prescription: Prescription) => {
     const doc = new jsPDF() as JSPDFWithAutoTable;
@@ -200,13 +320,15 @@ export default function PharmacyPage() {
     doc.setFontSize(12);
     doc.text('Prescribed Items:', 14, 80);
     
-    const itemData = prescription.items?.map(item => [
-      item.medicine?.name || 'Unknown',
-      item.quantity?.toString() || '0',
-      `$${(item.unitPrice || 0).toFixed(2)}`,
-      `${item.discount || 0}%`,
-      `$${(item.total || 0).toFixed(2)}`
-    ]) || [];
+    const itemData = (prescription.items && Array.isArray(prescription.items)) 
+      ? prescription.items.map(item => [
+          item.medicine?.name || 'Unknown',
+          item.quantity?.toString() || '0',
+          `$${(item.unitPrice || 0).toFixed(2)}`,
+          `${item.discount || 0}%`,
+          `$${(item.total || 0).toFixed(2)}`
+        ])
+      : [];
     
     autoTable(doc, {
       head: [['Medicine', 'Qty', 'Unit Price', 'Discount', 'Total']],
@@ -253,7 +375,7 @@ export default function PharmacyPage() {
   };
 
   const handleSubmit = async () => {
-    if (!patientName || !patientPhone || items.length === 0) {
+    if (!patientName?.trim() || !patientPhone?.trim() || !Array.isArray(items) || items.length === 0) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -272,8 +394,8 @@ export default function PharmacyPage() {
             discount: item.discount,
             unitPrice: item.unitPrice
           })),
-          totalAmount: calculateTotal(),
-          amountPaid: calculateTotal(),
+          totalAmount: calculateTotal,
+          amountPaid: calculateTotal,
           paymentMethod,
           status: 'completed'
         })
@@ -474,7 +596,7 @@ export default function PharmacyPage() {
                 <div className="md:col-span-2">
                   <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
                     <span className="font-medium">Total Amount:</span>
-                    <span className="text-xl font-bold">${calculateTotal().toFixed(2)}</span>
+                    <span className="text-xl font-bold">${calculateTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -512,8 +634,8 @@ export default function PharmacyPage() {
                   <div className="col-span-1">Actions</div>
                 </div>
                 
-                {prescriptions.length > 0 ? (
-                  prescriptions.map((prescription) => (
+                {Array.isArray(prescriptions) && prescriptions.length > 0 ? (
+                  prescriptions.map((prescription: Prescription) => (
                     <div key={prescription._id} className="grid grid-cols-12 gap-2 p-2 border-t">
                       <div className="col-span-2">{prescription.invoiceNumber}</div>
                       <div className="col-span-3">

@@ -127,32 +127,44 @@ export default function PharmacyPage() {
   
   const medicinesData = useMemo(() => {
     if (!medicinesResponse) return [];
-    // Stock API returns { data: [], pagination: {} }
-    if (medicinesResponse.data && Array.isArray(medicinesResponse.data)) {
-      return medicinesResponse.data;
+    
+    try {
+      // Stock API returns { data: [], pagination: {} }
+      if (medicinesResponse.data && Array.isArray(medicinesResponse.data)) {
+        return medicinesResponse.data;
+      }
+      // Fallback: if medicinesResponse is directly an array
+      if (Array.isArray(medicinesResponse)) {
+        return medicinesResponse;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error processing medicines data:', error);
+      return [];
     }
-    // Fallback: if medicinesResponse is directly an array
-    if (Array.isArray(medicinesResponse)) {
-      return medicinesResponse;
-    }
-    return [];
   }, [medicinesResponse]);
   
   const prescriptions = useMemo(() => {
     if (!prescriptionsResponse) return [];
-    // Prescriptions API returns { success: true, data: [] }
-    if (prescriptionsResponse.success && prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
-      return prescriptionsResponse.data;
+    
+    try {
+      // Prescriptions API returns { success: true, data: [] }
+      if (prescriptionsResponse.success && prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
+        return prescriptionsResponse.data;
+      }
+      // Fallback: if prescriptionsResponse.data is directly an array
+      if (prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
+        return prescriptionsResponse.data;
+      }
+      // Fallback: if prescriptionsResponse is directly an array
+      if (Array.isArray(prescriptionsResponse)) {
+        return prescriptionsResponse;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error processing prescriptions data:', error);
+      return [];
     }
-    // Fallback: if prescriptionsResponse.data is directly an array
-    if (prescriptionsResponse.data && Array.isArray(prescriptionsResponse.data)) {
-      return prescriptionsResponse.data;
-    }
-    // Fallback: if prescriptionsResponse is directly an array
-    if (Array.isArray(prescriptionsResponse)) {
-      return prescriptionsResponse;
-    }
-    return [];
   }, [prescriptionsResponse]);
 
   const filteredMedicines = useMemo(() => {

@@ -58,9 +58,20 @@ export default function InventoryManagementPage() {
     });
 
     const totalItems = filteredInventory.length;
-    const totalValue = filteredInventory.reduce((sum, item) => sum + (item.currentQuantity * item.unitPrice), 0);
-    const lowStockItems = filteredInventory.filter(item => item.remainingPercentage < 20).length;
-    const expiredItems = filteredInventory.filter(item => item.expiryStatus === 'expired').length;
+    const totalValue = Array.isArray(filteredInventory)
+      ? filteredInventory.reduce((sum, item) => {
+          if (item && typeof item.currentQuantity === 'number' && typeof item.unitPrice === 'number') {
+            return sum + (item.currentQuantity * item.unitPrice);
+          }
+          return sum;
+        }, 0)
+      : 0;
+    const lowStockItems = Array.isArray(filteredInventory)
+      ? filteredInventory.filter(item => item && typeof item.remainingPercentage === 'number' && item.remainingPercentage < 20).length
+      : 0;
+    const expiredItems = Array.isArray(filteredInventory)
+      ? filteredInventory.filter(item => item && item.expiryStatus === 'expired').length
+      : 0;
 
     doc.setFontSize(12);
     doc.text('Inventory Summary', 14, (doc as any).lastAutoTable.finalY + 20);

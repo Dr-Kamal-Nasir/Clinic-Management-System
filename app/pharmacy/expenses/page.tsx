@@ -107,7 +107,9 @@ export default function PharmacyExpensesPage() {
   );
 
   // Calculate total expenses
-  const totalExpenses = expenses?.reduce((sum: number, expense: Expense) => sum + expense.amount, 0) || 0;
+  const totalExpenses = Array.isArray(expenses)
+    ? expenses.reduce((sum: number, expense: Expense) => sum + (expense?.amount || 0), 0)
+    : 0;
 
   // Initialize form for new expense
   const initNewExpense = useCallback(() => {

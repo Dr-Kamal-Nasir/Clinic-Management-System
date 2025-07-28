@@ -100,35 +100,42 @@ export default function Dashboard() {
 
   // Calculate metrics
   const metrics = useMemo<Metrics | null>(() => {
-    if (!records || !expenses) return null;
+    const validRecords = Array.isArray(records) ? records : [];
+    const validExpenses = Array.isArray(expenses) ? expenses : [];
+    
+    if (validRecords.length === 0 && validExpenses.length === 0) return null;
 
-    const totalRevenue = records.reduce(
-      (sum: number, record: LabRecord) => sum + record.amountPaid,
+    const totalRevenue = validRecords.reduce(
+      (sum: number, record: LabRecord) => sum + (record?.amountPaid || 0),
       0
     );
-    const totalExpenses = expenses.reduce(
-      (sum: number, expense: Expense) => sum + expense.amount,
+    const totalExpenses = validExpenses.reduce(
+      (sum: number, expense: Expense) => sum + (expense?.amount || 0),
       0
     );
     const netProfit = totalRevenue - totalExpenses;
 
     // Group by test type - using Record<string, number> properly
-    const testTypeData = records.reduce(
+    const testTypeData = validRecords.reduce(
       (acc: Record<string, number>, record: LabRecord) => {
-        acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
+        if (record?.testType && typeof record.amountPaid === 'number') {
+          acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
+        }
         return acc;
       },
       {} as Record<string, number>
     ); // Initialize as empty Record
 
     // Group by expense type - using Record<string, number> properly
-    const expenseTypeData = expenses.reduce(
+    const expenseTypeData = validExpenses.reduce(
       (acc: Record<string, number>, expense: Expense) => {
-        const type =
-          expense.expenseType === "doctor_salary"
-            ? "Doctor Salaries"
-            : "Other Expenses";
-        acc[type] = (acc[type] || 0) + expense.amount;
+        if (expense?.expenseType && typeof expense.amount === 'number') {
+          const type =
+            expense.expenseType === "doctor_salary"
+              ? "Doctor Salaries"
+              : "Other Expenses";
+          acc[type] = (acc[type] || 0) + expense.amount;
+        }
         return acc;
       },
       {} as Record<string, number>
@@ -155,20 +162,35 @@ export default function Dashboard() {
 
   // Monthly data for line chart
   const monthlyData = useMemo<MonthlyData[]>(() => {
-    if (!records || !expenses) return [];
+    const validRecords = Array.isArray(records) ? records : [];
+    const validExpenses = Array.isArray(expenses) ? expenses : [];
+    
+    if (validRecords.length === 0 && validExpenses.length === 0) return [];
 
     // Group records by month - using Record<string, number> properly
     const monthlyRecords: Record<string, number> = {};
-    records.forEach((record: LabRecord) => {
-      const month = format(new Date(record.date), "MMM yyyy");
-      monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
+    validRecords.forEach((record: LabRecord) => {
+      if (record?.date && typeof record.amountPaid === 'number') {
+        try {
+          const month = format(new Date(record.date), "MMM yyyy");
+          monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
+        } catch (error) {
+          console.error('Error formatting record date:', error);
+        }
+      }
     });
 
     // Group expenses by month - using Record<string, number> properly
     const monthlyExpenses: Record<string, number> = {};
-    expenses.forEach((expense: Expense) => {
-      const month = format(new Date(expense.date), "MMM yyyy");
-      monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
+    validExpenses.forEach((expense: Expense) => {
+      if (expense?.date && typeof expense.amount === 'number') {
+        try {
+          const month = format(new Date(expense.date), "MMM yyyy");
+          monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
+        } catch (error) {
+          console.error('Error formatting expense date:', error);
+        }
+      }
     });
 
     // Combine data

@@ -236,13 +236,17 @@ export default function LaboratoryRecords() {
     fetcher
   );
 
-  const totalCharged = useMemo(() => 
-    records?.reduce((sum, r) => sum + r.amountCharged, 0) || 0, 
+  const totalCharged = useMemo(() =>
+    Array.isArray(records)
+      ? records.reduce((sum, r) => sum + (r?.amountCharged || 0), 0)
+      : 0,
     [records]
   );
 
-  const totalPaid = useMemo(() => 
-    records?.reduce((sum, r) => sum + r.amountPaid, 0) || 0, 
+  const totalPaid = useMemo(() =>
+    Array.isArray(records)
+      ? records.reduce((sum, r) => sum + (r?.amountPaid || 0), 0)
+      : 0,
     [records]
   );
 

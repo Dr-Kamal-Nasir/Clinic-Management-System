@@ -91,8 +91,10 @@ export default function LaboratoryExpenses() {
     });
   }, [expenses, searchTerm]);
 
-  const totalExpenses = useMemo<number>(() => 
-    filteredExpenses.reduce((sum: number, expense: Expense) => sum + expense.amount, 0), 
+  const totalExpenses = useMemo<number>(() =>
+    Array.isArray(filteredExpenses)
+      ? filteredExpenses.reduce((sum: number, expense: Expense) => sum + (expense?.amount || 0), 0)
+      : 0,
     [filteredExpenses]
   );
 
@@ -108,7 +110,9 @@ export default function LaboratoryExpenses() {
       if (!response.ok) throw new Error('Failed to fetch records');
       
       const records: Record[] = await response.json();
-      const total = records.reduce((sum: number, record: Record) => sum + record.amountPaid, 0);
+      const total = Array.isArray(records)
+        ? records.reduce((sum: number, record: Record) => sum + (record?.amountPaid || 0), 0)
+        : 0;
       setCalculatedAmount(total);
       setAmount(total * (percentage / 100));
       toast.success(`Calculated $${total.toFixed(2)} from records`);

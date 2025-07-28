@@ -180,31 +180,39 @@ export default function PharmacyDashboard() {
 
   // Calculate metrics
   const labMetrics = useMemo<LabMetrics | null>(() => {
-    if (!labRecords || !labExpenses) return null;
+    // Ensure we have valid arrays before processing
+    const validLabRecords = Array.isArray(labRecords) ? labRecords : [];
+    const validLabExpenses = Array.isArray(labExpenses) ? labExpenses : [];
+    
+    if (validLabRecords.length === 0 && validLabExpenses.length === 0) return null;
 
-    const totalRevenue = labRecords.reduce(
-      (sum, record) => sum + record.amountPaid,
+    const totalRevenue = validLabRecords.reduce(
+      (sum, record) => sum + (record?.amountPaid || 0),
       0
     );
-    const totalExpenses = labExpenses.reduce(
-      (sum, expense) => sum + expense.amount,
+    const totalExpenses = validLabExpenses.reduce(
+      (sum, expense) => sum + (expense?.amount || 0),
       0
     );
     const netProfit = totalRevenue - totalExpenses;
 
     // Group by test type
-    const testTypeData = labRecords.reduce((acc: Record<string, number>, record) => {
-      acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
+    const testTypeData = validLabRecords.reduce((acc: Record<string, number>, record) => {
+      if (record?.testType && typeof record.amountPaid === 'number') {
+        acc[record.testType] = (acc[record.testType] || 0) + record.amountPaid;
+      }
       return acc;
     }, {});
 
     // Group by expense type
-    const expenseTypeData = labExpenses.reduce((acc: Record<string, number>, expense) => {
-      const type =
-        expense.expenseType === "doctor_salary"
-          ? "Doctor Salaries"
-          : "Other Expenses";
-      acc[type] = (acc[type] || 0) + expense.amount;
+    const expenseTypeData = validLabExpenses.reduce((acc: Record<string, number>, expense) => {
+      if (expense?.expenseType && typeof expense.amount === 'number') {
+        const type =
+          expense.expenseType === "doctor_salary"
+            ? "Doctor Salaries"
+            : "Other Expenses";
+        acc[type] = (acc[type] || 0) + expense.amount;
+      }
       return acc;
     }, {});
 
@@ -225,23 +233,30 @@ export default function PharmacyDashboard() {
 
   // Monthly data for line chart
   const monthlyLabData = useMemo<MonthlyLabData[]>(() => {
-    if (!labRecords || !labExpenses) return [];
+    const validLabRecords = Array.isArray(labRecords) ? labRecords : [];
+    const validLabExpenses = Array.isArray(labExpenses) ? labExpenses : [];
+    
+    if (validLabRecords.length === 0 && validLabExpenses.length === 0) return [];
 
     // Group records by month
     const monthlyRecords: Record<string, number> = {};
-    labRecords.forEach((record) => {
-      const month = safeFormat(record.orderedDate, 'MMM yyyy');
-      if (month !== 'N/A') {
-        monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
+    validLabRecords.forEach((record) => {
+      if (record?.orderedDate && typeof record.amountPaid === 'number') {
+        const month = safeFormat(record.orderedDate, 'MMM yyyy');
+        if (month !== 'N/A') {
+          monthlyRecords[month] = (monthlyRecords[month] || 0) + record.amountPaid;
+        }
       }
     });
 
     // Group expenses by month
     const monthlyExpenses: Record<string, number> = {};
-    labExpenses.forEach((expense) => {
-      const month = safeFormat(expense.date, 'MMM yyyy');
-      if (month !== 'N/A') {
-        monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
+    validLabExpenses.forEach((expense) => {
+      if (expense?.date && typeof expense.amount === 'number') {
+        const month = safeFormat(expense.date, 'MMM yyyy');
+        if (month !== 'N/A') {
+          monthlyExpenses[month] = (monthlyExpenses[month] || 0) + expense.amount;
+        }
       }
     });
 

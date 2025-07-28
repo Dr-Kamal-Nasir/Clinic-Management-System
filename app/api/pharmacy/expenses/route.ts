@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Expense } from '@/lib/models/Expense';
 import dbConnect from '@/lib/dbConnect';
 import { getTokenPayload } from '@/lib/auth/jwt';
-import z from 'zod';
+import { z } from 'zod';
 
 const ExpenseSchema = z.object({
   date: z.coerce.date(),

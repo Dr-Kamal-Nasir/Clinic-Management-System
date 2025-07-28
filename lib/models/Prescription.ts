@@ -9,7 +9,7 @@ export interface PrescriptionItem {
   unitPrice: number;
 }
 
-export interface Prescription {
+export interface IPrescription {
   _id: Types.ObjectId;
   patientName: string;
   patientPhone: string;
@@ -24,7 +24,7 @@ export interface Prescription {
   updatedAt: Date;
 }
 
-const prescriptionSchema = new Schema<Prescription>({
+const prescriptionSchema = new Schema<IPrescription>({
   patientName: { type: String, required: true },
   patientPhone: { type: String, required: true },
   invoiceNumber: { type: String, required: true, unique: true },
@@ -63,5 +63,5 @@ prescriptionSchema.pre('save', async function(next) {
   next();
 });
 
-export const Prescription = mongoose.models.Prescription || 
-  mongoose.model<Prescription>('Prescription', prescriptionSchema);
+export const Prescription = mongoose.models.Prescription ||
+  mongoose.model<IPrescription>('Prescription', prescriptionSchema);

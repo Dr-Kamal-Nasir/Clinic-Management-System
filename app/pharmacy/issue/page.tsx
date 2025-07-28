@@ -275,8 +275,7 @@ export default function PharmacyPage() {
           totalAmount: calculateTotal(),
           amountPaid: calculateTotal(),
           paymentMethod,
-          status: 'completed',
-          issuedBy: user?.id
+          status: 'completed'
         })
       });
 

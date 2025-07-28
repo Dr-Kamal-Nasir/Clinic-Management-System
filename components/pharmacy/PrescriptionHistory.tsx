@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Printer, RefreshCw } from 'lucide-react';
 import { generatePharmacyReceipt } from '@/utils/generatePharmacyReceipt';
-import { Prescription as ModelPrescription, PrescriptionItem as ModelPrescriptionItem } from '@/lib/models/Prescription';
+import { IPrescription, PrescriptionItem } from '@/lib/models/Prescription';
 import { Types } from 'mongoose';
 import { IMedicineStock } from '@/lib/models/MedicineStock';
 
@@ -38,7 +38,7 @@ interface PrescriptionForReceipt {
 }
 
 interface PrescriptionHistoryProps {
-  prescriptions: ModelPrescription[];
+  prescriptions: IPrescription[];
   loading: boolean;
   user: User | null;
   onRefresh: () => void;
@@ -55,7 +55,7 @@ export const PrescriptionHistory = ({
   user,
   onRefresh
 }: PrescriptionHistoryProps) => {
-  const handlePrint = (prescription: ModelPrescription) => {
+  const handlePrint = (prescription: IPrescription) => {
     // Transform the prescription data to match the expected format
     const receiptData: PrescriptionForReceipt = {
       ...prescription,
@@ -137,7 +137,7 @@ export const PrescriptionHistory = ({
                   <div className="text-right">Total</div>
                 </div>
                 
-                {prescription.items.map((item: ModelPrescriptionItem, index: number) => {
+                {prescription.items.map((item: PrescriptionItem, index: number) => {
                   const medicineInfo = getMedicineInfo(item.medicine);
                   return (
                     <div key={index} className="grid grid-cols-6 gap-2 text-sm py-2 border-t">

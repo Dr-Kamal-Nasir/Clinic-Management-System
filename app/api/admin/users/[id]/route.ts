@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from '@/lib/models/User';
 import dbConnect from '@/lib/dbConnect';
-import { UserSchema } from '@/lib/schemas/userSchema';
+import { UpdateUserSchema } from '@/lib/schemas/userSchema';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { jwtDecode } from 'jwt-decode';
@@ -84,7 +84,7 @@ export async function PUT(
     
     // Parse and validate request body
     const body = await request.json();
-    const validation = UserSchema.safeParse(body);
+    const validation = UpdateUserSchema.safeParse(body);
     
     if (!validation.success) {
       return NextResponse.json(

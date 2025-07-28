@@ -5,7 +5,7 @@ import { Prescription } from '@/lib/models/Prescription';
 import { Expense } from '@/lib/models/Expense';
 import dbConnect from '@/lib/dbConnect';
 import { getTokenPayload } from '@/lib/auth/jwt';
-import z from 'zod';
+import { z } from 'zod';
 import { startOfDay, endOfDay } from 'date-fns';
 
 const DailyCashSchema = z.object({

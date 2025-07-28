@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from '@/lib/models/User';
 import dbConnect from '@/lib/dbConnect';
-import { UserSchema } from '@/lib/schemas/userSchema';
+import { CreateUserSchema } from '@/lib/schemas/userSchema';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { jwtDecode } from 'jwt-decode';
@@ -60,10 +60,15 @@ export async function POST(req: NextRequest) {
     }
     
     const body = await req.json();
-    const validation = UserSchema.safeParse(body);
+    
+    // For POST (create), password is required
+    const validation = CreateUserSchema.safeParse(body);
     
     if (!validation.success) {
-      return NextResponse.json(validation.error, { status: 400 });
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validation.error.format()
+      }, { status: 400 });
     }
     
     // Check if email exists
@@ -96,3 +101,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

@@ -37,10 +37,11 @@ export function CalendarDateRangePicker({
       case 'today':
         onDateChange({ from: today, to: today });
         break;
-      case 'yesterday':
+      case 'yesterday': {
         const yesterday = addDays(today, -1);
         onDateChange({ from: yesterday, to: yesterday });
         break;
+      }
       case 'last7':
         onDateChange({ from: addDays(today, -7), to: today });
         break;
@@ -53,14 +54,15 @@ export function CalendarDateRangePicker({
           to: today
         });
         break;
-      case 'lastMonth':
+      case 'lastMonth': {
         const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-        onDateChange({ 
+        onDateChange({
           from: firstDayLastMonth,
           to: lastDayLastMonth
         });
         break;
+      }
       case 'custom':
       default:
         // Keep current selection

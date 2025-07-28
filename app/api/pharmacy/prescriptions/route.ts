@@ -4,7 +4,7 @@ import { Prescription } from '@/lib/models/Prescription';
 import { MedicineStock } from '@/lib/models/MedicineStock';
 import dbConnect from '@/lib/dbConnect';
 import { getTokenPayload } from '@/lib/auth/jwt';
-import z from 'zod';
+import { z } from 'zod';
 
 const PrescriptionSchema = z.object({
   patientName: z.string().min(2),
@@ -90,11 +90,7 @@ export async function POST(req: NextRequest) {
     // Create prescription
     const newPrescription = await Prescription.create({
       ...validation.data,
-      issuedBy: payload.id,
-      items: validation.data.items.map(item => ({
-        ...item,
-        total: item.unitPrice * item.quantity * (1 - (item.discount / 100))
-      }))
+      issuedBy: payload.id
     });
 
     return NextResponse.json(newPrescription, { status: 201 });

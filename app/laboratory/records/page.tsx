@@ -107,15 +107,15 @@ const FormField = memo(({
   optional = false 
 }: FormFieldProps) => {
   return (
-    <div className="grid grid-cols-4 items-center gap-4">
-      <Label htmlFor={label.toLowerCase()} className="text-right">
+    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+      <Label htmlFor={label.toLowerCase()} className="text-left sm:text-right text-sm font-medium">
         {label}{!optional && '*'}
       </Label>
       <Input
         id={label.toLowerCase()}
         value={value}
         onChange={onChange}
-        className="col-span-3"
+        className="col-span-1 sm:col-span-3"
       />
     </div>
   );
@@ -128,15 +128,15 @@ const NumberField = memo(({
   onChange 
 }: NumberFieldProps) => {
   return (
-    <div className="grid grid-cols-4 items-center gap-4">
-      <Label className="text-right">{label}</Label>
+    <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+      <Label className="text-left sm:text-right text-sm font-medium">{label}</Label>
       <Input
         type="number"
         min="0"
         step="0.01"
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="col-span-3"
+        className="col-span-1 sm:col-span-3"
       />
     </div>
   );
@@ -149,18 +149,18 @@ const DateFilter = memo(({
   setDate 
 }: DateFilterProps) => {
   return (
-    <div>
-      <Label>{label}</Label>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal text-xs sm:text-sm",
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             {date ? format(date, "PPP") : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
@@ -180,11 +180,11 @@ DateFilter.displayName = 'DateFilter';
 
 const SummaryCard = memo(({ title, value }: SummaryCardProps) => {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">{title}</h3>
-          <p className="text-2xl font-bold">${value.toFixed(2)}</p>
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h3 className="text-sm sm:text-lg font-medium text-muted-foreground">{title}</h3>
+          <p className="text-lg sm:text-2xl font-bold">${value.toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>
@@ -351,20 +351,26 @@ export default function LaboratoryRecords() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Laboratory Records</h1>
-        <Button onClick={() => { setDialogOpen(true); resetForm(); }}>
-          <PlusIcon className="mr-2 h-4 w-4" /> Add Record
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      {/* Header - Responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold">Laboratory Records</h1>
+        <Button 
+          onClick={() => { setDialogOpen(true); resetForm(); }}
+          className="w-full sm:w-auto text-xs sm:text-sm"
+        >
+          <PlusIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+          Add Record
         </Button>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Records</CardTitle>
+      {/* Filter Card - Responsive */}
+      <Card className="mb-4 sm:mb-6">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-sm sm:text-base">Filter Records</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <DateFilter 
               label="Start Date"
               date={filterStartDate}
@@ -378,7 +384,7 @@ export default function LaboratoryRecords() {
             <div className="flex items-end">
               <Button
                 variant="secondary"
-                className="w-full"
+                className="w-full text-xs sm:text-sm"
                 onClick={() => {
                   setFilterStartDate(undefined);
                   setFilterEndDate(undefined);
@@ -391,84 +397,112 @@ export default function LaboratoryRecords() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      {/* Summary Cards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
         <SummaryCard title="Total Charged" value={totalCharged} />
         <SummaryCard title="Total Paid" value={totalPaid} />
         <SummaryCard title="Balance" value={totalBalance} />
       </div>
 
+      {/* Table - Responsive with horizontal scroll */}
       <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Invoice</TableHead>
-              <TableHead>Test Type</TableHead>
-              <TableHead>Charged</TableHead>
-              <TableHead>Paid</TableHead>
-              <TableHead>Recorded By</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
-                  <Skeleton className="h-10 w-full" />
-                </TableCell>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap">Date</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap">Patient</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap hidden sm:table-cell">Invoice</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap">Test Type</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap">Charged</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap hidden md:table-cell">Paid</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap hidden lg:table-cell">Recorded By</TableHead>
+                <TableHead className="text-xs sm:text-sm whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ) : records?.length ? (
-              records.map((record) => (
-                <TableRow key={record._id}>
-                  <TableCell>{format(new Date(record.date), 'PP')}</TableCell>
-                  <TableCell>{record.patientName}</TableCell>
-                  <TableCell>{record.invoiceNumber}</TableCell>
-                  <TableCell>{record.testType}</TableCell>
-                  <TableCell>${record.amountCharged.toFixed(2)}</TableCell>
-                  <TableCell>${record.amountPaid.toFixed(2)}</TableCell>
-                  <TableCell>{record.recordedBy?.name || 'System'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(record)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(record._id)}
-                      >
-                        <TrashIcon className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-4">
+                    <Skeleton className="h-8 sm:h-10 w-full" />
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center">
-                  No records found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ) : records?.length ? (
+                records.map((record) => (
+                  <TableRow key={record._id}>
+                    <TableCell className="text-xs sm:text-sm whitespace-nowrap">
+                      {format(new Date(record.date), 'MMM d, yy')}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">
+                      <div className="max-w-[120px] sm:max-w-none truncate">
+                        {record.patientName}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm whitespace-nowrap hidden sm:table-cell">
+                      {record.invoiceNumber}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">
+                      <div className="max-w-[100px] sm:max-w-none truncate">
+                        {record.testType}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm whitespace-nowrap font-medium">
+                      ${record.amountCharged.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm whitespace-nowrap hidden md:table-cell">
+                      ${record.amountPaid.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
+                      <div className="max-w-[120px] truncate">
+                        {record.recordedBy?.name || 'System'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 sm:gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 sm:h-8 sm:w-8"
+                          onClick={() => handleEdit(record)}
+                        >
+                          <PencilIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 sm:h-8 sm:w-8"
+                          onClick={() => handleDelete(record._id)}
+                        >
+                          <TrashIcon className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-xs sm:text-sm text-muted-foreground">
+                    No records found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
+      {/* Dialog - Responsive */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">
               {editMode ? 'Edit Record' : 'Add New Record'}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
+            {/* Date Field - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+              <Label htmlFor="date" className="text-left sm:text-right text-sm font-medium">
                 Date*
               </Label>
               <Popover>
@@ -476,11 +510,11 @@ export default function LaboratoryRecords() {
                   <Button
                     variant="outline"
                     className={cn(
-                      "col-span-3 justify-start text-left font-normal",
+                      "col-span-1 sm:col-span-3 justify-start text-left font-normal text-xs sm:text-sm",
                       !date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                     {date ? format(date, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
@@ -506,20 +540,21 @@ export default function LaboratoryRecords() {
               onChange={handleInvoiceNumberChange}
             />
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="testType" className="text-right">
+            {/* Test Type Select - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
+              <Label htmlFor="testType" className="text-left sm:text-right text-sm font-medium">
                 Test Type*
               </Label>
               <Select
                 value={testType}
                 onValueChange={setTestType}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="col-span-1 sm:col-span-3 text-xs sm:text-sm">
                   <SelectValue placeholder="Select test type" />
                 </SelectTrigger>
                 <SelectContent>
                   {TEST_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <SelectItem key={type.value} value={type.value} className="text-xs sm:text-sm">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -544,10 +579,11 @@ export default function LaboratoryRecords() {
               onChange={handleAmountPaidChange}
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
             <Button 
               type="button" 
               variant="outline" 
+              className="w-full sm:w-auto text-xs sm:text-sm"
               onClick={() => {
                 setDialogOpen(false);
                 resetForm();
@@ -557,6 +593,7 @@ export default function LaboratoryRecords() {
             </Button>
             <Button 
               type="button" 
+              className="w-full sm:w-auto text-xs sm:text-sm"
               onClick={handleSubmit}
               disabled={isLoading}
             >

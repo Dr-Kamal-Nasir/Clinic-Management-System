@@ -176,7 +176,7 @@ export default function PharmacyLayout({ children }: { children: React.ReactNode
             
             <div className="flex items-center gap-4 ml-auto">
               {user?.role === 'admin' && (
-                <Link href="/admin/dashboard">
+                <Link href="/dashboard">
                   <Button variant="secondary" size="sm" className="gap-2">
                     <Home className="h-4 w-4" />
                     <span className="hidden sm:inline">Admin</span>

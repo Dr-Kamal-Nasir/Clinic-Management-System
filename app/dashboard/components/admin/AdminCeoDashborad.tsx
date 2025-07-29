@@ -300,34 +300,42 @@ export default function PharmacyDashboard() {
   const labLoading = labRecordsLoading || labExpensesLoading;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Pharmacy & Laboratory Dashboard</h1>
-        <div className="flex gap-4">
-          <Button variant="outline">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {format(new Date(), "MMMM d, yyyy")}
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      {/* Header - Responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+          Pharmacy & Laboratory Dashboard
+        </h1>
+        <div className="flex gap-2 sm:gap-4 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none text-xs sm:text-sm">
+            <CalendarIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">
+              {format(new Date(), "MMMM d, yyyy")}
+            </span>
+            <span className="sm:hidden">
+              {format(new Date(), "MMM d")}
+            </span>
           </Button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2Icon className="h-12 w-12 animate-spin" />
+        <div className="flex items-center justify-center h-32 sm:h-64">
+          <Loader2Icon className="h-8 w-8 sm:h-12 sm:w-12 animate-spin" />
         </div>
       ) : (
         <>
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
+          {/* Stats Overview - Fully Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium">
                   Pharmacy Sales
                 </CardTitle>
-                <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
+                <ReceiptIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="pt-0">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                   ${stats?.totalSales?.toFixed(2) || "0.00"}
                 </div>
                 <div
@@ -336,24 +344,29 @@ export default function PharmacyDashboard() {
                   }`}
                 >
                   {salesChange >= 0 ? (
-                    <TrendingUpIcon className="h-4 w-4 mr-1" />
+                    <TrendingUpIcon className="h-3 w-3 mr-1" />
                   ) : (
-                    <TrendingDownIcon className="h-4 w-4 mr-1" />
+                    <TrendingDownIcon className="h-3 w-3 mr-1" />
                   )}
-                  {Math.abs(salesChange)}% from last period
+                  <span className="hidden sm:inline">
+                    {Math.abs(salesChange)}% from last period
+                  </span>
+                  <span className="sm:hidden">
+                    {Math.abs(salesChange)}%
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium">
                   Lab Revenue
                 </CardTitle>
-                <FlaskConicalIcon className="h-4 w-4 text-muted-foreground" />
+                <FlaskConicalIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="pt-0">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                   ${stats?.labTotalRevenue?.toFixed(2) || "0.00"}
                 </div>
                 <div
@@ -362,24 +375,29 @@ export default function PharmacyDashboard() {
                   }`}
                 >
                   {labRevenueChange >= 0 ? (
-                    <TrendingUpIcon className="h-4 w-4 mr-1" />
+                    <TrendingUpIcon className="h-3 w-3 mr-1" />
                   ) : (
-                    <TrendingDownIcon className="h-4 w-4 mr-1" />
+                    <TrendingDownIcon className="h-3 w-3 mr-1" />
                   )}
-                  {Math.abs(labRevenueChange)}% from last period
+                  <span className="hidden sm:inline">
+                    {Math.abs(labRevenueChange)}% from last period
+                  </span>
+                  <span className="sm:hidden">
+                    {Math.abs(labRevenueChange)}%
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                 Pharmacy Total Expenses 
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium">
+                  Pharmacy Expenses
                 </CardTitle>
-                <WalletIcon className="h-4 w-4 text-muted-foreground" />
+                <WalletIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="pt-0">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                   ${stats?.totalExpenses?.toFixed(2) || "0.00"}
                 </div>
                 <div
@@ -388,22 +406,27 @@ export default function PharmacyDashboard() {
                   }`}
                 >
                   {expensesChange >= 0 ? (
-                    <TrendingUpIcon className="h-4 w-4 mr-1" />
+                    <TrendingUpIcon className="h-3 w-3 mr-1" />
                   ) : (
-                    <TrendingDownIcon className="h-4 w-4 mr-1" />
+                    <TrendingDownIcon className="h-3 w-3 mr-1" />
                   )}
-                  {Math.abs(expensesChange)}% from last period
+                  <span className="hidden sm:inline">
+                    {Math.abs(expensesChange)}% from last period
+                  </span>
+                  <span className="sm:hidden">
+                    {Math.abs(expensesChange)}%
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Lab Tests</CardTitle>
-                <SyringeIcon className="h-4 w-4 text-muted-foreground" />
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium">Lab Tests</CardTitle>
+                <SyringeIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="pt-0">
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold">
                   {stats?.completedLabTests || 0} /{" "}
                   {stats?.pendingLabTests || 0}
                 </div>
@@ -413,111 +436,126 @@ export default function PharmacyDashboard() {
                   }`}
                 >
                   {labTestsChange >= 0 ? (
-                    <TrendingUpIcon className="h-4 w-4 mr-1" />
+                    <TrendingUpIcon className="h-3 w-3 mr-1" />
                   ) : (
-                    <TrendingDownIcon className="h-4 w-4 mr-1" />
+                    <TrendingDownIcon className="h-3 w-3 mr-1" />
                   )}
-                  {Math.abs(labTestsChange)}% from last period
+                  <span className="hidden sm:inline">
+                    {Math.abs(labTestsChange)}% from last period
+                  </span>
+                  <span className="sm:hidden">
+                    {Math.abs(labTestsChange)}%
+                  </span>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content - Responsive Tabs */}
           <Tabs defaultValue="pharmacy" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="pharmacy">Pharmacy</TabsTrigger>
-              <TabsTrigger value="laboratory">Laboratory</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
+              <TabsTrigger value="pharmacy" className="text-xs sm:text-sm">
+                Pharmacy
+              </TabsTrigger>
+              <TabsTrigger value="laboratory" className="text-xs sm:text-sm">
+                Laboratory
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pharmacy" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
+              {/* Pharmacy Content - Responsive Layout */}
+              <div className="grid gap-4 lg:grid-cols-7">
+                <Card className="lg:col-span-4">
                   <CardHeader>
-                    <CardTitle>Recent Prescriptions</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Recent Prescriptions</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Patient</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Payment</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {Array.isArray(recentPrescriptions) && recentPrescriptions.map((prescription) => (
-                          <TableRow key={prescription._id}>
-                            <TableCell>{prescription.patientName}</TableCell>
-                            <TableCell>
-                              ${prescription.totalAmount.toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="capitalize">
-                                {prescription.paymentMethod}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {format(
-                                new Date(prescription.createdAt),
-                                "MMM d, yyyy"
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  prescription.status === "completed"
-                                    ? "default"
-                                    : prescription.status === "pending"
-                                    ? "secondary"
-                                    : "destructive"
-                                }
-                              >
-                                {prescription.status}
-                              </Badge>
-                            </TableCell>
+                  <CardContent className="p-0 sm:p-6">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs sm:text-sm">Patient</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Amount</TableHead>
+                            <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Payment</TableHead>
+                            <TableHead className="text-xs sm:text-sm hidden md:table-cell">Date</TableHead>
+                            <TableHead className="text-xs sm:text-sm">Status</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.isArray(recentPrescriptions) && recentPrescriptions.map((prescription) => (
+                            <TableRow key={prescription._id}>
+                              <TableCell className="text-xs sm:text-sm font-medium">
+                                {prescription.patientName}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                ${prescription.totalAmount.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell">
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {prescription.paymentMethod}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                                {format(
+                                  new Date(prescription.createdAt),
+                                  "MMM d, yyyy"
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    prescription.status === "completed"
+                                      ? "default"
+                                      : prescription.status === "pending"
+                                      ? "secondary"
+                                      : "destructive"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {prescription.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
 
-                <Card className="col-span-3">
+                <Card className="lg:col-span-3">
                   <CardHeader>
-                    <CardTitle>Low Stock Alerts</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Low Stock Alerts</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {stockError ? (
-                      <div className="text-red-500 text-center py-4">
+                      <div className="text-red-500 text-center py-4 text-xs sm:text-sm">
                         Failed to load low stock items
                       </div>
                     ) : lowStockItems?.length === 0 ? (
-                      <div className="text-muted-foreground text-center py-4">
+                      <div className="text-muted-foreground text-center py-4 text-xs sm:text-sm">
                         No low stock items
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {Array.isArray(lowStockItems) && lowStockItems.map((item) => (
                           <div key={item._id} className="flex items-center">
                             <div className="space-y-1 w-full">
-                              <p className="text-sm font-medium leading-none">
+                              <p className="text-xs sm:text-sm font-medium leading-none">
                                 {item.name} - {item.batchNumber}
                               </p>
                               <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-xs text-muted-foreground">
                                   {item.currentQuantity} /{" "}
                                   {item.originalQuantity} remaining
                                 </span>
-                                <span className="text-sm font-medium">
+                                <span className="text-xs font-medium">
                                   {item.remainingPercentage.toFixed(0)}%
                                 </span>
                               </div>
                               <Progress
                                 value={item.remainingPercentage}
-                                className="h-2"
+                                className="h-1.5 sm:h-2"
                                 style={
                                   {
                                     "--progress-indicator-color":
@@ -540,14 +578,15 @@ export default function PharmacyDashboard() {
             </TabsContent>
 
             <TabsContent value="laboratory" className="space-y-4">
-              {/* Laboratory Dashboard Content */}
-              <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-2xl font-bold">
+              {/* Laboratory Dashboard Content - Responsive */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">
                   Laboratory Financial Dashboard
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
+                    className="flex-1 sm:flex-none text-xs sm:text-sm"
                     onClick={() => {
                       setLabStartDate(undefined);
                       setLabEndDate(undefined);
@@ -558,35 +597,35 @@ export default function PharmacyDashboard() {
                 </div>
               </div>
 
-              {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Key Metrics - Responsive Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Total Revenue</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm sm:text-base">Total Revenue</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
                       ${labMetrics?.totalRevenue?.toFixed(2) || "0.00"}
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Total Expenses</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm sm:text-base">Total Expenses</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">
+                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
                       ${labMetrics?.totalExpenses?.toFixed(2) || "0.00"}
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Net Profit</CardTitle>
+                <Card className="sm:col-span-2 lg:col-span-1">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm sm:text-base">Net Profit</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div
-                      className={`text-3xl font-bold ${
+                      className={`text-xl sm:text-2xl lg:text-3xl font-bold ${
                         labMetrics?.netProfit && labMetrics.netProfit >= 0
                           ? "text-green-500"
                           : "text-red-500"
@@ -598,13 +637,13 @@ export default function PharmacyDashboard() {
                 </Card>
               </div>
 
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Charts - Responsive Layout */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Monthly Performance</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Monthly Performance</CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
+                  <CardContent className="h-[250px] sm:h-[300px] lg:h-[400px]">
                     {labLoading ? (
                       <Skeleton className="h-full w-full" />
                     ) : (
@@ -613,14 +652,18 @@ export default function PharmacyDashboard() {
                           data={monthlyLabData}
                           margin={{
                             top: 20,
-                            right: 30,
-                            left: 20,
+                            right: 10,
+                            left: 10,
                             bottom: 5,
                           }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
+                          <XAxis 
+                            dataKey="name" 
+                            fontSize={12}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <YAxis fontSize={12} tick={{ fontSize: 10 }} />
                           <Tooltip />
                           <Legend />
                           <Bar
@@ -642,9 +685,9 @@ export default function PharmacyDashboard() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Revenue by Test Type</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Revenue by Test Type</CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
+                  <CardContent className="h-[250px] sm:h-[300px] lg:h-[400px]">
                     {labLoading ? (
                       <Skeleton className="h-full w-full" />
                     ) : (
@@ -655,7 +698,7 @@ export default function PharmacyDashboard() {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            outerRadius={120}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
@@ -678,12 +721,13 @@ export default function PharmacyDashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Bottom Charts - Responsive Layout */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Expense Breakdown</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Expense Breakdown</CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[400px]">
+                  <CardContent className="h-[250px] sm:h-[300px] lg:h-[400px]">
                     {labLoading ? (
                       <Skeleton className="h-full w-full" />
                     ) : (
@@ -694,7 +738,7 @@ export default function PharmacyDashboard() {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            outerRadius={120}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
@@ -720,13 +764,13 @@ export default function PharmacyDashboard() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Transactions</CardTitle>
+                    <CardTitle className="text-sm sm:text-base">Recent Transactions</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {labLoading ? (
-                      <Skeleton className="h-[300px] w-full" />
+                      <Skeleton className="h-[250px] sm:h-[300px] w-full" />
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4 max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] overflow-y-auto">
                         {[
                           ...(Array.isArray(labRecords) ? labRecords.slice(0, 5) : []),
                           ...(Array.isArray(labExpenses) ? labExpenses.slice(0, 5) : []),
@@ -757,17 +801,17 @@ export default function PharmacyDashboard() {
                             return (
                               <div
                                 key={item._id}
-                                className="flex justify-between items-center p-2 border rounded"
+                                className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-3 border rounded gap-2"
                               >
-                                <div>
-                                  <p className="font-medium">{description}</p>
-                                  <p className="text-sm text-muted-foreground">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs sm:text-sm font-medium truncate">{description}</p>
+                                  <p className="text-xs text-muted-foreground">
                                     {safeFormat(new Date(date), "PP")} •{" "}
                                     {doctorName}
                                   </p>
                                 </div>
                                 <div
-                                  className={`font-bold ${
+                                  className={`text-xs sm:text-sm font-bold flex-shrink-0 ${
                                     isRecord ? "text-green-500" : "text-red-500"
                                   }`}
                                 >
@@ -778,6 +822,14 @@ export default function PharmacyDashboard() {
                               </div>
                             );
                           })}
+                        {[
+                          ...(Array.isArray(labRecords) ? labRecords : []),
+                          ...(Array.isArray(labExpenses) ? labExpenses : []),
+                        ].length === 0 && (
+                          <div className="text-center py-8 text-xs sm:text-sm text-muted-foreground">
+                            No recent transactions
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

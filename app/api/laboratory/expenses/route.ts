@@ -49,11 +49,18 @@ export async function GET(req: NextRequest) {
     
     const query: ExpenseQuery = {};
     
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+    // Only add date filter if both dates are provided and valid
+    if (startDate && endDate && startDate.trim() !== '' && endDate.trim() !== '') {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      // Check if dates are valid
+      if (!isNaN(startDateObj.getTime()) && !isNaN(endDateObj.getTime())) {
+        query.date = {
+          $gte: startDateObj,
+          $lte: endDateObj
+        };
+      }
     }
 
     if (expenseType && ['normal', 'doctor_salary'].includes(expenseType)) {
@@ -63,8 +70,11 @@ export async function GET(req: NextRequest) {
     const expenses = await LaboratoryExpense.find(query)
       .sort({ date: -1 })
       .populate('recordedBy', 'name');
+    
+    // Ensure we always return an array
+    const expensesArray = Array.isArray(expenses) ? expenses : [];
       
-    return NextResponse.json(expenses);
+    return NextResponse.json(expensesArray);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch expenses';
     return NextResponse.json(

@@ -59,18 +59,28 @@ export async function GET(req: NextRequest) {
     
     const query: RecordQuery = {};
     
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+    // Only add date filter if both dates are provided and valid
+    if (startDate && endDate && startDate.trim() !== '' && endDate.trim() !== '') {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      // Check if dates are valid
+      if (!isNaN(startDateObj.getTime()) && !isNaN(endDateObj.getTime())) {
+        query.date = {
+          $gte: startDateObj,
+          $lte: endDateObj
+        };
+      }
     }
 
     const records = await LaboratoryRecord.find(query)
       .sort({ date: -1 })
       .populate('recordedBy', 'name');
+    
+    // Ensure we always return an array
+    const recordsArray = Array.isArray(records) ? records : [];
       
-    return NextResponse.json(records);
+    return NextResponse.json(recordsArray);
   } catch (err: unknown) {
     console.error('Failed to fetch records:', err);
     const errorMessage = err instanceof Error ? err.message : 'Failed to fetch records';

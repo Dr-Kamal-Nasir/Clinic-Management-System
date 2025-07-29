@@ -448,7 +448,7 @@ export default function PharmacyDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {recentPrescriptions?.map((prescription) => (
+                        {Array.isArray(recentPrescriptions) && recentPrescriptions.map((prescription) => (
                           <TableRow key={prescription._id}>
                             <TableCell>{prescription.patientName}</TableCell>
                             <TableCell>
@@ -500,7 +500,7 @@ export default function PharmacyDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {lowStockItems?.map((item) => (
+                        {Array.isArray(lowStockItems) && lowStockItems.map((item) => (
                           <div key={item._id} className="flex items-center">
                             <div className="space-y-1 w-full">
                               <p className="text-sm font-medium leading-none">
@@ -663,7 +663,7 @@ export default function PharmacyDashboard() {
                               `${name} ${(percent * 100).toFixed(0)}%`
                             }
                           >
-                            {labMetrics?.testTypeData?.map((entry, index) => (
+                            {Array.isArray(labMetrics?.testTypeData) && labMetrics.testTypeData.map((entry, index) => (
                               <Cell
                                 key={`cell-${index}`}
                                 fill={COLORS[index % COLORS.length]}
@@ -702,7 +702,7 @@ export default function PharmacyDashboard() {
                               `${name} ${(percent * 100).toFixed(0)}%`
                             }
                           >
-                            {labMetrics?.expenseTypeData?.map(
+                            {Array.isArray(labMetrics?.expenseTypeData) && labMetrics.expenseTypeData.map(
                               (entry, index) => (
                                 <Cell
                                   key={`cell-${index}`}
@@ -728,8 +728,8 @@ export default function PharmacyDashboard() {
                     ) : (
                       <div className="space-y-4">
                         {[
-                          ...(labRecords || []).slice(0, 5),
-                          ...(labExpenses || []).slice(0, 5),
+                          ...(Array.isArray(labRecords) ? labRecords.slice(0, 5) : []),
+                          ...(Array.isArray(labExpenses) ? labExpenses.slice(0, 5) : []),
                         ]
                           .sort((a, b) => {
                             const getDate = (item: any) => {

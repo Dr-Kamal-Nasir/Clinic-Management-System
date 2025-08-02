@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface MedicineStock {
   _id: string;
@@ -50,13 +51,27 @@ export default function PharmacyStockPage() {
   const [medicineToDelete, setMedicineToDelete] = useState<string | null>(null);
   const [selectedStock, setSelectedStock] = useState<MedicineStock | null>(null);
   const [search, setSearch] = useState('');
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+    setPage(1); // Reset to first page when searching
+  };
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('management');
   
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  
   const { data, error, isLoading, mutate } = useSWR(
-    `/api/pharmacy/stock?search=${search}`,
-    fetcher
+    `/api/pharmacy/stock?search=${search}&page=${page}&limit=${pageSize}`,
+    fetcher,
+    {
+      onErrorRetry: (error) => {
+        if (error.status === 404 || error.status === 401) return;
+      }
+    }
   );
+
+  const medicines = data?.data || [];
 
   const handleEdit = (stock: MedicineStock) => {
     setSelectedStock(stock);
@@ -106,12 +121,12 @@ export default function PharmacyStockPage() {
         <h1 className="text-2xl font-bold">Pharmacy Stock Management</h1>
         
         <div className="flex gap-4">
-          <Input
-            placeholder="Search medicines..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-          />
+            <Input
+              placeholder="Search medicines..."
+              value={search}
+              onChange={handleSearchChange}
+              className="max-w-sm"
+            />
           
           {(user?.role === 'pharmacy' || user?.role === 'admin') && (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -151,111 +166,133 @@ export default function PharmacyStockPage() {
           ) : error ? (
             <div className="text-red-500">Error loading medicine stock</div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medicine</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Level</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {data?.data?.map((medicine: MedicineStock) => {
-                    const expiryDate = new Date(medicine.expiryDate);
-                    const isExpired = expiryDate < new Date();
-                    const daysToExpiry = Math.floor((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                    
-                    let expiryStatus = '';
-                    let badgeVariant: 'default' | 'destructive' | 'outline' | 'secondary' = 'default';
-                    
-                    if (isExpired) {
-                      expiryStatus = 'Expired';
-                      badgeVariant = 'destructive';
-                    } else if (daysToExpiry <= 30) {
-                      expiryStatus = `Expires in ${daysToExpiry} days`;
-                      badgeVariant = 'destructive';
-                    } else if (daysToExpiry <= 90) {
-                      expiryStatus = `Expires in ${daysToExpiry} days`;
-                      badgeVariant = 'outline';
-                    } else {
-                      expiryStatus = 'Valid';
-                      badgeVariant = 'default';
-                    }
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  Showing {data?.data?.length || 0} of {data?.pagination?.total || 0} items
+                </p>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Medicine</TableHead>
+                    <TableHead>Batch</TableHead>
+                    <TableHead>Stock Level</TableHead>
+                    <TableHead>Expiry</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {medicines.map((medicine: MedicineStock) => {
+                      const expiryDate = new Date(medicine.expiryDate);
+                      const isExpired = expiryDate < new Date();
+                      const daysToExpiry = Math.floor((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                      
+                      let expiryStatus = '';
+                      let badgeVariant: 'default' | 'destructive' | 'outline' | 'secondary' = 'default';
+                      
+                      if (isExpired) {
+                        expiryStatus = 'Expired';
+                        badgeVariant = 'destructive';
+                      } else if (daysToExpiry <= 30) {
+                        expiryStatus = `Expires in ${daysToExpiry} days`;
+                        badgeVariant = 'destructive';
+                      } else if (daysToExpiry <= 90) {
+                        expiryStatus = `Expires in ${daysToExpiry} days`;
+                        badgeVariant = 'outline';
+                      } else {
+                        expiryStatus = 'Valid';
+                        badgeVariant = 'default';
+                      }
 
-                    return (
-                      <tr key={medicine._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium">{medicine.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {medicine.batchNumber}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-4">
-                            <div className="min-w-[100px]">
-                              <Progress 
-                                value={calculateStockPercentage(medicine.currentQuantity, medicine.originalQuantity)}
-                                className="h-2"
-                              />
-                              <div className="text-xs text-muted-foreground text-right">
-                                {medicine.currentQuantity}/{medicine.originalQuantity} (
-                                {calculateStockPercentage(medicine.currentQuantity, medicine.originalQuantity)}%)
+                      return (
+                        <TableRow key={medicine._id}>
+                          <TableCell className="font-medium">{medicine.name}</TableCell>
+                          <TableCell>{medicine.batchNumber}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-4">
+                              <div className="min-w-[100px]">
+                                <Progress 
+                                  value={calculateStockPercentage(medicine.currentQuantity, medicine.originalQuantity)}
+                                  className="h-2"
+                                />
+                                <div className="text-xs text-muted-foreground text-right">
+                                  {medicine.currentQuantity}/{medicine.originalQuantity} (
+                                  {calculateStockPercentage(medicine.currentQuantity, medicine.originalQuantity)}%)
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col gap-1">
-                            <span>{expiryDate.toLocaleDateString()}</span>
-                            <Badge variant={badgeVariant} className="w-fit">
-                              {expiryStatus}
-                            </Badge>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          ${medicine.sellingPrice.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            {(user?.role === 'pharmacy' || user?.role === 'admin') && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => handleEdit(medicine)}
-                                  title="Edit"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
-                                  onClick={() => confirmDelete(medicine._id)}
-                                  title="Delete"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <span>{expiryDate.toLocaleDateString()}</span>
+                              <Badge variant={badgeVariant} className="w-fit">
+                                {expiryStatus}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>AFN {medicine.sellingPrice.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {(user?.role === 'pharmacy' || user?.role === 'admin') && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => handleEdit(medicine)}
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
+                                    onClick={() => confirmDelete(medicine._id)}
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between px-2 py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Page {page} of {Math.ceil((data?.pagination?.total || 0) / pageSize)}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      Previous
+                    </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={!data?.pagination?.next || medicines.length === 0}
+                  >
+                      Next
+                    </Button>
+                  </div>
+                </div>
             </div>
           )}
         </TabsContent>
         
         <TabsContent value="reports">
-          <MedicineStockReport data={data?.data || []} />
+          <MedicineStockReport data={medicines} />
         </TabsContent>
       </Tabs>
 

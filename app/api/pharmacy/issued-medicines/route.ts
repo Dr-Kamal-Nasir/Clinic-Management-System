@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MedicineStock } from '@/lib/models/MedicineStock';
 import dbConnect from '@/lib/dbConnect';
 import { getTokenPayload } from '@/lib/auth/jwt';
-import { FlattenMaps } from 'mongoose';
 
 // Define types
 interface TokenPayload {

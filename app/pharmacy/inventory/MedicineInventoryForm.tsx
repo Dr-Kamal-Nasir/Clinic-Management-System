@@ -218,7 +218,7 @@ export function MedicineStockForm({
                 name="unitPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit Price ($)</FormLabel>
+                    <FormLabel>Unit Price (AFN)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -237,7 +237,7 @@ export function MedicineStockForm({
                 name="sellingPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Selling Price ($)</FormLabel>
+                    <FormLabel>Selling Price (AFN)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

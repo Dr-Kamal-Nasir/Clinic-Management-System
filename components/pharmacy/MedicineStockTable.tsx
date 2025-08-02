@@ -137,12 +137,12 @@ export default function MedicineStockTable({
     {
       accessorKey: 'unitPrice',
       header: 'Unit Price',
-      cell: ({ row }) => `$${parseFloat(row.getValue('unitPrice')).toFixed(2)}`,
+      cell: ({ row }) => `AFN ${parseFloat(row.getValue('unitPrice')).toFixed(2)}`,
     },
     {
       accessorKey: 'sellingPrice',
       header: 'Selling Price',
-      cell: ({ row }) => `$${parseFloat(row.getValue('sellingPrice')).toFixed(2)}`,
+      cell: ({ row }) => `AFN ${parseFloat(row.getValue('sellingPrice')).toFixed(2)}`,
     },
     {
       accessorKey: 'supplier',

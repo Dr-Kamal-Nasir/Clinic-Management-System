@@ -122,7 +122,7 @@ export default function PharmacyPage() {
   const [invoiceNumber, setInvoiceNumber] = useState<string>(`INV-${Date.now()}`);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
-  const { data: medicinesResponse, isLoading: isLoadingStock, mutate: mutateStock } = useSWR('/api/pharmacy/stock', fetcher);
+  const { data: medicinesResponse, isLoading: isLoadingStock, mutate: mutateStock } = useSWR('/api/pharmacy/stock?limit=1000', fetcher);
   const { data: prescriptionsResponse, isLoading: isLoadingPrescriptions, mutate: mutatePrescriptions } = useSWR('/api/pharmacy/prescriptions', fetcher);
   
   const medicinesData = useMemo(() => {
@@ -336,9 +336,9 @@ export default function PharmacyPage() {
       ? prescription.items.map(item => [
           item.medicine?.name || 'Unknown',
           item.quantity?.toString() || '0',
-          `$${(item.unitPrice || 0).toFixed(2)}`,
+          `AFN ${(item.unitPrice || 0).toFixed(2)}`,
           `${item.discount || 0}%`,
-          `$${(item.total || 0).toFixed(2)}`
+          `AFN ${(item.total || 0).toFixed(2)}`
         ])
       : [];
     
@@ -363,8 +363,8 @@ export default function PharmacyPage() {
     
     autoTable(doc, {
       body: [
-        ['Subtotal:', `$${(prescription.totalAmount || 0).toFixed(2)}`],
-        ['Amount Paid:', `$${(prescription.amountPaid || 0).toFixed(2)}`],
+        ['Subtotal:', `AFN ${(prescription.totalAmount || 0).toFixed(2)}`],
+        ['Amount Paid:', `AFN ${(prescription.amountPaid || 0).toFixed(2)}`],
         ['Payment Method:', prescription.paymentMethod],
         ['Status:', prescription.status]
       ],
@@ -497,7 +497,7 @@ export default function PharmacyPage() {
                             <div className="flex flex-col">
                               <span>{medicine.name}</span>
                               <span className="text-xs text-muted-foreground">
-                                Batch: {medicine.batchNumber} | Qty: {medicine.currentQuantity} | Price: ${medicine.sellingPrice.toFixed(2)}
+                                Batch: {medicine.batchNumber} | Qty: {medicine.currentQuantity} | Price: AFN{medicine.sellingPrice.toFixed(2)}
                               </span>
                             </div>
                           </SelectItem>
@@ -576,7 +576,7 @@ export default function PharmacyPage() {
                         />
                       </div>
                       <div className="col-span-1 flex items-center justify-between">
-                        <span>${item.total.toFixed(2)}</span>
+                        <span>AFN {item.total.toFixed(2)}</span>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -608,7 +608,7 @@ export default function PharmacyPage() {
                 <div className="md:col-span-2">
                   <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
                     <span className="font-medium">Total Amount:</span>
-                    <span className="text-xl font-bold">${calculateTotal.toFixed(2)}</span>
+                    <span className="text-xl font-bold">AFN {calculateTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -658,7 +658,7 @@ export default function PharmacyPage() {
                         {new Date(prescription.createdAt).toLocaleDateString()}
                       </div>
                       <div className="col-span-2">
-                        ${prescription.totalAmount?.toFixed(2) || '0.00'}
+                        AFN {prescription.totalAmount?.toFixed(2) || '0.00'}
                       </div>
                       <div className="col-span-2">
                         <Badge variant="outline" className="capitalize">

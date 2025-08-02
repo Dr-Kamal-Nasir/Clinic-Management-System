@@ -33,15 +33,6 @@ type DashboardStats = {
   lowStockItems: number;
 };
 
-type RecentPrescription = {
-  _id: string;
-  patientName: string;
-  totalAmount: number;
-  paymentMethod: string;
-  createdAt: string;
-  status: string;
-};
-
 type LowStockItem = {
   _id: string;
   name: string;
@@ -49,6 +40,28 @@ type LowStockItem = {
   currentQuantity: number;
   originalQuantity: number;
   remainingPercentage: number;
+};
+
+type MedicineStock = {
+  _id: string;
+  name: string;
+  batchNumber: string;
+  expiryDate: string;
+  currentQuantity: number;
+  originalQuantity: number;
+  unitPrice: number;
+  sellingPrice: number;
+  supplier: string;
+};
+
+type RecentPrescription = {
+  _id: string;
+  invoiceNumber: string;
+  patientName: string;
+  totalAmount: number;
+  paymentMethod: string;
+  createdAt: string;
+  status: string;
 };
 
 type RecentExpense = {
@@ -68,7 +81,8 @@ export default function PharmacyDashboard() {
   // Fetch all dashboard data
   const { data: stats, isLoading: statsLoading } = useSWR<DashboardStats>('/api/pharmacy/dashboard/stats', fetcher);
   const { data: recentPrescriptions, isLoading: prescriptionsLoading } = useSWR<RecentPrescription[]>('/api/pharmacy/prescriptions/recent', fetcher);
-  const { data: lowStockItems, isLoading: stockLoading, error: stockError } = useSWR<LowStockItem[]>('/api/pharmacy/inventory/low-stock', fetcher);
+  const { data: lowStockData, isLoading: stockLoading, error: stockError } = useSWR('/api/pharmacy/inventory/low-stock', fetcher);
+  const lowStockItems = lowStockData?.data || [];
   const { data: recentExpenses, isLoading: expensesLoading } = useSWR<RecentExpense[]>('/api/pharmacy/expenses/recent', fetcher);
 
   // Calculate percentage changes (mock data - replace with actual comparison logic)
@@ -105,7 +119,7 @@ export default function PharmacyDashboard() {
                 <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats?.totalSales?.toFixed(2) || '0.00'}</div>
+                <div className="text-2xl font-bold">AFN {stats?.totalSales?.toFixed(2) || '0.00'}</div>
                 <div className={`flex items-center text-xs ${salesChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {salesChange >= 0 ? (
                     <TrendingUpIcon className="h-4 w-4 mr-1" />
@@ -123,7 +137,7 @@ export default function PharmacyDashboard() {
                 <WalletIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats?.totalExpenses?.toFixed(2) || '0.00'}</div>
+                <div className="text-2xl font-bold">AFN {stats?.totalExpenses?.toFixed(2) || '0.00'}</div>
                 <div className={`flex items-center text-xs ${expensesChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {expensesChange >= 0 ? (
                     <TrendingUpIcon className="h-4 w-4 mr-1" />
@@ -141,7 +155,7 @@ export default function PharmacyDashboard() {
                 <PillIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats?.inventoryValue?.toFixed(2) || '0.00'}</div>
+                <div className="text-2xl font-bold">AFN{stats?.inventoryValue?.toFixed(2) || '0.00'}</div>
                 <div className={`flex items-center text-xs ${inventoryChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {inventoryChange >= 0 ? (
                     <TrendingUpIcon className="h-4 w-4 mr-1" />
@@ -193,10 +207,10 @@ export default function PharmacyDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {recentPrescriptions?.map((prescription) => (
+                        {recentPrescriptions?.map((prescription: RecentPrescription) => (
                           <TableRow key={prescription._id}>
                             <TableCell>{prescription.patientName}</TableCell>
-                            <TableCell>${prescription.totalAmount.toFixed(2)}</TableCell>
+                            <TableCell>AFN {prescription.totalAmount.toFixed(2)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="capitalize">
                                 {prescription.paymentMethod}
@@ -235,7 +249,7 @@ export default function PharmacyDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {lowStockItems?.map((item) => (
+                        {lowStockItems.map((item: LowStockItem) => (
                           <div key={item._id} className="flex items-center">
                             <div className="space-y-1 w-full">
                               <p className="text-sm font-medium leading-none">{item.name} - {item.batchNumber}</p>
@@ -334,7 +348,7 @@ function InventoryTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {inventory?.map((item: any) => (
+        {inventory?.map((item: MedicineStock) => (
           <TableRow key={item._id}>
             <TableCell className="font-medium">{item.name}</TableCell>
             <TableCell>{item.batchNumber}</TableCell>
@@ -353,8 +367,8 @@ function InventoryTable() {
                 />
               </div>
             </TableCell>
-            <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-            <TableCell>${item.sellingPrice.toFixed(2)}</TableCell>
+            <TableCell>AFN {item.unitPrice.toFixed(2)}</TableCell>
+            <TableCell>AFN {item.sellingPrice.toFixed(2)}</TableCell>
             <TableCell>{item.supplier}</TableCell>
           </TableRow>
         ))}
@@ -388,11 +402,11 @@ function SalesTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sales?.map((sale: any) => (
+        {sales?.map((sale: RecentPrescription) => (
           <TableRow key={sale._id}>
             <TableCell className="font-medium">{sale.invoiceNumber}</TableCell>
             <TableCell>{sale.patientName}</TableCell>
-            <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
+            <TableCell>AFN {sale.totalAmount.toFixed(2)}</TableCell>
             <TableCell>
               <Badge variant="outline" className="capitalize">
                 {sale.paymentMethod}
@@ -431,7 +445,7 @@ function ExpensesTable({ expenses }: { expenses: RecentExpense[] }) {
       <TableBody>
         {expenses.map((expense) => (
           <TableRow key={expense._id}>
-            <TableCell className="font-medium">${expense.amount.toFixed(2)}</TableCell>
+            <TableCell className="font-medium">AFN {expense.amount.toFixed(2)}</TableCell>
             <TableCell>{expense.category}</TableCell>
             <TableCell>{expense.description}</TableCell>
             <TableCell>{format(new Date(expense.date), 'MMM d, yyyy')}</TableCell>

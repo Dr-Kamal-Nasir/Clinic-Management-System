@@ -291,7 +291,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${metrics?.totalRevenue?.toFixed(2) || "0.00"}
+              AFN {metrics?.totalRevenue?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -301,7 +301,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${metrics?.totalExpenses?.toFixed(2) || "0.00"}
+              AFN {metrics?.totalExpenses?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -317,7 +317,7 @@ export default function Dashboard() {
                   : "text-red-500"
               }`}
             >
-              ${metrics?.netProfit?.toFixed(2) || "0.00"}
+              AFN {metrics?.netProfit?.toFixed(2) || "0.00"}
             </div>
           </CardContent>
         </Card>
@@ -457,8 +457,8 @@ export default function Dashboard() {
                         }`}
                       >
                         {isRecord
-                          ? `+$${item.amountPaid.toFixed(2)}`
-                          : `-$${item.amount.toFixed(2)}`}
+                          ? `+AFN ${item.amountPaid.toFixed(2)}`
+                          : `-AFN ${item.amount.toFixed(2)}`}
                       </div>
                     </div>
                   );

@@ -336,7 +336,7 @@ export default function LaboratoryExpenses() {
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <h3 className="text-sm sm:text-lg font-medium text-muted-foreground">Total Expenses</h3>
-            <p className="text-lg sm:text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+            <p className="text-lg sm:text-2xl font-bold">AFN {totalExpenses.toFixed(2)}</p>
           </div>
         </CardContent>
       </Card>
@@ -385,13 +385,13 @@ export default function LaboratoryExpenses() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm whitespace-nowrap font-medium">
-                      ${expense.amount.toFixed(2)}
+                      AFN {expense.amount.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
                       <div className="max-w-[150px] truncate">
                         {expense.expenseType === 'doctor_salary' && expense.percentage && expense.calculatedFromRecords && (
                           <span>
-                            {expense.percentage}% of ${expense.calculatedFromRecords.toFixed(2)}
+                            {expense.percentage}% of AFN {expense.calculatedFromRecords.toFixed(2)}
                           </span>
                         )}
                       </div>
@@ -563,7 +563,7 @@ export default function LaboratoryExpenses() {
                     <div className="grid grid-cols-1 sm:grid-cols-4 items-start sm:items-center gap-2 sm:gap-4">
                       <Label className="text-left sm:text-right text-sm font-medium">Total Collected</Label>
                       <div className="col-span-1 sm:col-span-3 p-2 border rounded text-xs sm:text-sm">
-                        ${calculatedAmount.toFixed(2)}
+                        AFN {calculatedAmount.toFixed(2)}
                       </div>
                     </div>
                     
@@ -587,7 +587,7 @@ export default function LaboratoryExpenses() {
                           <span className="text-xs sm:text-sm">%</span>
                         </div>
                         <span className="text-xs sm:text-sm font-medium">
-                          (${(calculatedAmount * (percentage / 100)).toFixed(2)})
+                          (AFN {(calculatedAmount * (percentage / 100)).toFixed(2)})
                         </span>
                       </div>
                     </div>

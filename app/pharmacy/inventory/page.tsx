@@ -48,8 +48,8 @@ export default function InventoryManagementPage() {
         item.batchNumber,
         formatDate(item.expiryDate),
         `${item.currentQuantity}/${item.originalQuantity} (${Math.round(item.remainingPercentage)}%)`,
-        `$${item.unitPrice.toFixed(2)}`,
-        `$${item.sellingPrice.toFixed(2)}`,
+        `AFN ${item.unitPrice.toFixed(2)}`,
+        `AFN ${item.sellingPrice.toFixed(2)}`,
         item.supplier
       ]),
       styles: { fontSize: 9 },
@@ -80,7 +80,7 @@ export default function InventoryManagementPage() {
       startY: (doc as any).lastAutoTable.finalY + 25,
       body: [
         ['Total Items', totalItems],
-        ['Total Inventory Value', `$${totalValue.toFixed(2)}`],
+        ['Total Inventory Value', `AFN ${totalValue.toFixed(2)}`],
         ['Low Stock Items (<20%)', lowStockItems],
         ['Expired Items', expiredItems]
       ],
@@ -198,8 +198,8 @@ export default function InventoryManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">Cost: ${item.unitPrice.toFixed(2)}</div>
-                      <div className="text-sm">Sell: ${item.sellingPrice.toFixed(2)}</div>
+                      <div className="text-sm">Cost: AFN {item.unitPrice.toFixed(2)}</div>
+                      <div className="text-sm">Sell: AFN {item.sellingPrice.toFixed(2)}</div>
                     </TableCell>
                     <TableCell>{item.supplier}</TableCell>
                     <TableCell>

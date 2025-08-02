@@ -336,7 +336,7 @@ export default function PharmacyDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  ${stats?.totalSales?.toFixed(2) || "0.00"}
+                  AFN {stats?.totalSales?.toFixed(2) || "0.00"}
                 </div>
                 <div
                   className={`flex items-center text-xs ${
@@ -367,7 +367,7 @@ export default function PharmacyDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  ${stats?.labTotalRevenue?.toFixed(2) || "0.00"}
+                  AFN {stats?.labTotalRevenue?.toFixed(2) || "0.00"}
                 </div>
                 <div
                   className={`flex items-center text-xs ${
@@ -398,7 +398,7 @@ export default function PharmacyDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  ${stats?.totalExpenses?.toFixed(2) || "0.00"}
+                  AFN {stats?.totalExpenses?.toFixed(2) || "0.00"}
                 </div>
                 <div
                   className={`flex items-center text-xs ${
@@ -488,7 +488,7 @@ export default function PharmacyDashboard() {
                                 {prescription.patientName}
                               </TableCell>
                               <TableCell className="text-xs sm:text-sm">
-                                ${prescription.totalAmount.toFixed(2)}
+                                AFN {prescription.totalAmount.toFixed(2)}
                               </TableCell>
                               <TableCell className="hidden sm:table-cell">
                                 <Badge variant="outline" className="text-xs capitalize">
@@ -605,7 +605,7 @@ export default function PharmacyDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
-                      ${labMetrics?.totalRevenue?.toFixed(2) || "0.00"}
+                      AFN {labMetrics?.totalRevenue?.toFixed(2) || "0.00"}
                     </div>
                   </CardContent>
                 </Card>
@@ -615,7 +615,7 @@ export default function PharmacyDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-xl sm:text-2xl lg:text-3xl font-bold">
-                      ${labMetrics?.totalExpenses?.toFixed(2) || "0.00"}
+                      AFN {labMetrics?.totalExpenses?.toFixed(2) || "0.00"}
                     </div>
                   </CardContent>
                 </Card>
@@ -631,7 +631,7 @@ export default function PharmacyDashboard() {
                           : "text-red-500"
                       }`}
                     >
-                      ${labMetrics?.netProfit?.toFixed(2) || "0.00"}
+                      AFN {labMetrics?.netProfit?.toFixed(2) || "0.00"}
                     </div>
                   </CardContent>
                 </Card>
@@ -816,8 +816,8 @@ export default function PharmacyDashboard() {
                                   }`}
                                 >
                                   {isRecord
-                                    ? `+$${amount.toFixed(2)}`
-                                    : `-$${Math.abs(amount).toFixed(2)}`}
+                                    ? `+AFN ${amount.toFixed(2)}`
+                                    : `-AFN ${Math.abs(amount).toFixed(2)}`}
                                 </div>
                               </div>
                             );

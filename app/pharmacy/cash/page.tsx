@@ -151,7 +151,7 @@ export default function CashAtHandPage() {
               </div>
              
               <div>
-                <Label>Opening Balance ($) *</Label>
+                <Label>Opening Balance (AFN ) *</Label>
                 <Input
                   type="number"
                   value={openingBalance}
@@ -162,7 +162,7 @@ export default function CashAtHandPage() {
               </div>
              
               <div>
-                <Label>Cash Sales ($)</Label>
+                <Label>Cash Sales (AFN)</Label>
                 <Input
                   type="number"
                   value={calculatedValues?.cashSales || 0}
@@ -172,7 +172,7 @@ export default function CashAtHandPage() {
               </div>
              
               <div>
-                <Label>Expenses ($)</Label>
+                <Label>Expenses (AFN)</Label>
                 <Input
                   type="number"
                   value={calculatedValues?.expenses || 0}
@@ -182,7 +182,7 @@ export default function CashAtHandPage() {
               </div>
              
               <div>
-                <Label>Closing Balance ($) *</Label>
+                <Label>Closing Balance (AFN) *</Label>
                 <Input
                   type="number"
                   value={closingBalance}
@@ -193,7 +193,7 @@ export default function CashAtHandPage() {
               </div>
              
               <div>
-                <Label>Discrepancy ($)</Label>
+                <Label>Discrepancy (AFN)</Label>
                 <Input
                   type="number"
                   value={calculateDiscrepancy()}
@@ -236,20 +236,20 @@ export default function CashAtHandPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="border rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-500">Opening Balance</h3>
-              <p className="text-2xl font-bold">${cashRecords?.[0]?.openingBalance?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">AFN {cashRecords?.[0]?.openingBalance?.toFixed(2) || '0.00'}</p>
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-500">Cash Sales</h3>
-              <p className="text-2xl font-bold">${calculatedValues?.cashSales?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">AFN {calculatedValues?.cashSales?.toFixed(2) || '0.00'}</p>
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-500">Expenses</h3>
-              <p className="text-2xl font-bold">${calculatedValues?.expenses?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">AFN {calculatedValues?.expenses?.toFixed(2) || '0.00'}</p>
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-500">Discrepancy</h3>
               <p className={`text-2xl font-bold ${currentDiscrepancy !== 0 ? 'text-red-500' : 'text-green-500'}`}>
-                ${currentDiscrepancy?.toFixed(2) || '0.00'}
+                AFN {currentDiscrepancy?.toFixed(2) || '0.00'}
               </p>
             </div>
           </div>
@@ -277,12 +277,12 @@ export default function CashAtHandPage() {
               {cashRecords?.map((record) => (
                 <TableRow key={record._id}>
                   <TableCell>{format(new Date(record.date), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>${record.openingBalance.toFixed(2)}</TableCell>
-                  <TableCell>${record.cashSales.toFixed(2)}</TableCell>
-                  <TableCell>${record.expenses.toFixed(2)}</TableCell>
-                  <TableCell>${record.closingBalance.toFixed(2)}</TableCell>
+                  <TableCell>AFN {record.openingBalance.toFixed(2)}</TableCell>
+                  <TableCell>AFN {record.cashSales.toFixed(2)}</TableCell>
+                  <TableCell>AFN {record.expenses.toFixed(2)}</TableCell>
+                  <TableCell>AFN {record.closingBalance.toFixed(2)}</TableCell>
                   <TableCell className={record.discrepancy !== 0 ? 'text-red-500' : 'text-green-500'}>
-                    ${record.discrepancy.toFixed(2)}
+                    AFN {record.discrepancy.toFixed(2)}
                   </TableCell>
                   <TableCell>{record.verifiedBy?.name || 'System'}</TableCell>
                 </TableRow>

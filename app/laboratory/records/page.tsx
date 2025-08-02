@@ -184,7 +184,7 @@ const SummaryCard = memo(({ title, value }: SummaryCardProps) => {
       <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h3 className="text-sm sm:text-lg font-medium text-muted-foreground">{title}</h3>
-          <p className="text-lg sm:text-2xl font-bold">${value.toFixed(2)}</p>
+          <p className="text-lg sm:text-2xl font-bold">AFN{value.toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>
@@ -447,10 +447,10 @@ export default function LaboratoryRecords() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm whitespace-nowrap font-medium">
-                      ${record.amountCharged.toFixed(2)}
+                      AFN {record.amountCharged.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm whitespace-nowrap hidden md:table-cell">
-                      ${record.amountPaid.toFixed(2)}
+                      AFN {record.amountPaid.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-xs sm:text-sm hidden lg:table-cell">
                       <div className="max-w-[120px] truncate">

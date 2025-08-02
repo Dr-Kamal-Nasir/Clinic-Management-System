@@ -297,7 +297,7 @@ export default function PharmacyExpensesPage() {
         <CardContent className="p-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Total Expenses</h3>
-            <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+            <p className="text-2xl font-bold">AFN {totalExpenses.toFixed(2)}</p>
           </div>
         </CardContent>
       </Card>
@@ -347,7 +347,7 @@ export default function PharmacyExpensesPage() {
             {/* Amount Input */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="amount" className="text-right">
-                Amount ($) *
+                Amount (AFN) *
               </Label>
               <Input
                 id="amount"
@@ -445,7 +445,7 @@ export default function PharmacyExpensesPage() {
                     <TableCell>{format(new Date(expense.date), 'MMM dd, yyyy')}</TableCell>
                     <TableCell>{expense.category}</TableCell>
                     <TableCell>{expense.description}</TableCell>
-                    <TableCell className="text-right">${expense.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">AFN {expense.amount.toFixed(2)}</TableCell>
                     <TableCell>{expense.recordedBy?.name || "System"}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

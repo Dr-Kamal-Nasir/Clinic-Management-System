@@ -9,6 +9,12 @@ import {useAuthStore} from '@/store/useAuthStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Atal Medical",
+  description: "Dr. Kamal Naser Rahim",
+};
 
 const navLinks = [
   { href: '/pharmacy', label: 'Dashboard', icon: LayoutDashboard },

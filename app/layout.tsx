@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dr. Nasir Rahim",
-  description: "Dr. Nasir Rahim Clinic",
+  title: "Atal Medical",
+  description: "Dr. Kamal Naser Rahim",
 };
 
 export default function RootLayout({

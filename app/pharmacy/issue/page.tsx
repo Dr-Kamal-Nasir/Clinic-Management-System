@@ -606,7 +606,7 @@ export default function PharmacyPage() {
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                  <div className="flex justify-between items-center p-4 rounded-lg border-2">
                     <span className="font-medium">Total Amount:</span>
                     <span className="text-xl font-bold">AFN {calculateTotal.toFixed(2)}</span>
                   </div>
@@ -637,7 +637,7 @@ export default function PharmacyPage() {
               </div>
 
               <div className="border rounded-lg overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 p-2 bg-gray-100 font-medium">
+                <div className="grid grid-cols-12 gap-2 p-2 font-medium">
                   <div className="col-span-2">Invoice #</div>
                   <div className="col-span-3">Patient</div>
                   <div className="col-span-2">Date</div>

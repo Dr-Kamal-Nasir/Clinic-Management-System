@@ -141,7 +141,7 @@ export default function PharmacyLayout({ children }: { children: React.ReactNode
                   
                   {user?.role === 'admin' && (
                     <Link
-                      href="/admin/dashboard"
+                      href="/dashboard"
                       onClick={() => setSidebarOpen(false)}
                       className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                     >

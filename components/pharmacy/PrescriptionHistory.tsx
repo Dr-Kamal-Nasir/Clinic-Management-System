@@ -98,8 +98,8 @@ export const PrescriptionHistory = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
+    <div className="space-y-4 p-2 sm:p-4">
+      <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onRefresh} disabled={loading}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
@@ -114,38 +114,38 @@ export const PrescriptionHistory = ({
         <div className="space-y-4">
           {prescriptions.map((prescription) => (
             <div key={prescription._id.toString()} className="border rounded-lg p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium">{prescription.patientName}</h3>
-                  <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                <div className="flex-1 min-w-[200px]">
+                  <h3 className="font-medium text-sm sm:text-base">{prescription.patientName}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {prescription.invoiceNumber} • {new Date(prescription.createdAt).toLocaleString()}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">${prescription.totalAmount.toFixed(2)}</p>
-                  <p className="text-sm capitalize">{prescription.paymentMethod}</p>
+                  <p className="text-sm sm:text-base font-bold">${prescription.totalAmount.toFixed(2)}</p>
+                  <p className="text-xs sm:text-sm capitalize">{prescription.paymentMethod}</p>
                 </div>
               </div>
               
               <div className="mt-4">
-                <div className="grid grid-cols-6 gap-2 font-medium text-sm mb-2">
-                  <div className="text-center">#</div>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-2 font-medium text-xs sm:text-sm mb-2">
+                  <div className="hidden md:block text-center">#</div>
                   <div>Medicine</div>
-                  <div className="text-center">Batch</div>
-                  <div className="text-right">Qty</div>
-                  <div className="text-right">Price</div>
+                  <div className="hidden md:block text-center">Batch</div>
+                  <div className="text-right md:text-center">Qty</div>
+                  <div className="hidden sm:block text-right">Price</div>
                   <div className="text-right">Total</div>
                 </div>
                 
                 {prescription.items.map((item: PrescriptionItem, index: number) => {
                   const medicineInfo = getMedicineInfo(item.medicine);
                   return (
-                    <div key={index} className="grid grid-cols-6 gap-2 text-sm py-2 border-t">
-                      <div className="text-center">{index + 1}</div>
-                      <div>{medicineInfo.name}</div>
-                      <div className="text-center">{medicineInfo.batchNumber}</div>
-                      <div className="text-right">{item.quantity}</div>
-                      <div className="text-right">${item.unitPrice.toFixed(2)}</div>
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-2 text-xs sm:text-sm py-2 border-t">
+                      <div className="hidden md:block text-center">{index + 1}</div>
+                      <div className="truncate">{medicineInfo.name}</div>
+                      <div className="hidden md:block text-center">{medicineInfo.batchNumber}</div>
+                      <div className="text-right md:text-center">{item.quantity}</div>
+                      <div className="hidden sm:block text-right">${item.unitPrice.toFixed(2)}</div>
                       <div className="text-right">
                         ${(item.quantity * item.unitPrice * (1 - item.discount / 100)).toFixed(2)}
                       </div>

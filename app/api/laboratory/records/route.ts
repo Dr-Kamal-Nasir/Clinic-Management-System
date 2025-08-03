@@ -47,13 +47,16 @@ const validateRequest = async (req: NextRequest): Promise<ValidateRequestResult>
 };
 
 export async function GET(req: NextRequest) {
-  await dbConnect();
-  
-  const { error } = await validateRequest(req);
-  if (error) return error;
-
   try {
+    console.log('Connecting to database...');
+    await dbConnect();
+    
+    const { error } = await validateRequest(req);
+    if (error) return error;
+    console.log('Database connection and auth validation successful');
+
     const { searchParams } = new URL(req.url);
+    console.log('Request params:', Object.fromEntries(searchParams.entries()));
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     

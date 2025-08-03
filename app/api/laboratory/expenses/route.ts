@@ -34,14 +34,18 @@ const expenseSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  await dbConnect();
-  const payload = await getTokenPayload(req) as TokenPayload | null;
-  
-  if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    console.log('Connecting to database for expenses...');
+    await dbConnect();
+    const payload = await getTokenPayload(req) as TokenPayload | null;
+    
+    if (!payload || !['admin', 'laboratory'].includes(payload.role)) {
+      console.log('Unauthorized access attempt');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('Successfully connected to database and validated token');
+    console.log('Request params:', Object.fromEntries(new URL(req.url).searchParams.entries()));
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');

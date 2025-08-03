@@ -427,11 +427,15 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[...(records || []).slice(0, 5), ...(expenses || []).slice(0, 5)]
-                .sort(
-                  (a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                )
+              {[...(Array.isArray(records) ? records.slice(0, 5) : []), 
+                ...(Array.isArray(expenses) ? expenses.slice(0, 5) : [])]
+                .sort((a, b) => {
+                  try {
+                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                  } catch {
+                    return 0;
+                  }
+                })
                 .slice(0, 5)
                 .map((item) => {
                   const isRecord = "testType" in item;

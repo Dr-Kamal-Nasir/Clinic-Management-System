@@ -33,7 +33,7 @@ export default function Dashboard() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <h1 className="text-3xl font-bold">Dashboard</h1>
       <p className="text-gray-600 mt-2">
         Welcome back, {user?.name} ({user?.role})

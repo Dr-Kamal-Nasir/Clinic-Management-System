@@ -11,10 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: "Atal Medical",
-  description: "Dr. Kamal Naser Rahim",
-};
 
 const navLinks = [
   { href: '/laboratory/dashboard', label: 'Dashboard', icon: LayoutDashboard },
